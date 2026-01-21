@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | My Shop</title>
+    <!-- Use Tailwind CSS for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            /* Background Image Setup */
+            background-image: url('https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-900/30 backdrop-blur-[1px] p-4">
+
+    <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-8 mx-auto border border-white/40">
+        <div class="text-center mb-8">
+            <h3 class="text-3xl font-bold text-gray-900 mb-2 font-serif">Welcome Back</h3>
+            <p class="text-gray-600">Please log in to your account</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-5">
+                <label class="block text-gray-800 mb-2 font-bold text-xs uppercase tracking-wider">Username / Email</label>
+                <input type="text" name="username" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-900 focus:border-transparent outline-none transition-all bg-white/50 focus:bg-white"
+                    placeholder="Enter your username">
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-gray-800 mb-2 font-bold text-xs uppercase tracking-wider">Password</label>
+                <input type="password" name="password" required
+                    class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-900 focus:border-transparent outline-none transition-all bg-white/50 focus:bg-white"
+                    placeholder="Enter your password">
+            </div>
+
+            <button type="submit"
+                class="w-full bg-black hover:bg-purple-900 text-white font-bold py-3 px-4 rounded-lg transition-transform active:scale-95 shadow-lg">
+                LOG IN
+            </button>
+        </form>
+
+        <p class="text-center mt-6 text-gray-600">
+            Don't have an account? <a href="{% url 'register' %}" class="text-gray-900 font-bold hover:underline hover:text-purple-900">Create Account</a>
+        </p>
+    </div>
+
+</body>
+</html>

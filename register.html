@@ -1,47 +1,191 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Sign Up</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Online Shopping</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            /* Optional: Add a subtle pattern or image here if you want */
+            /* background-image: url('https://your-image-url.com/bg.jpg'); */
+            /* background-size: cover; */
+        }
+        .register-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .register-header {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            padding: 2rem;
+            color: white;
+            text-align: center;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #344767;
+            font-size: 0.9rem;
+        }
+        .form-control, .form-select {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #d2d6da;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        .btn-primary {
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8898aa;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+    </style>
 </head>
 <body>
-    <h2>Create Account</h2>
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        <h3>Basic Info</h3>
-        <label>Full Name:</label> 
-        <input type="text" name="username" required><br>
-        
-        <label>Email:</label> 
-        <input type="email" name="email" required><br>
-        
-        <label>Password:</label> 
-        <input type="password" name="password" required><br>
 
-        <h3>Select Role</h3>
-        <select name="role">
-            <option value="customer">Customer (I'm the Customer)</option>
-            <option value="vendor">Vendor (I'm the Vendor)</option>
-        </select>
-        <br>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card register-card">
+                <div class="register-header">
+                    <h3 class="fw-bold mb-0">Create Account</h3>
+                    <p class="mb-0 opacity-75">Join our community today</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
 
-        <h3>Shipping Address (Required for Customers)</h3>
-        <p style="color: grey; font-size: 0.8em;">(Vendors can skip this section)</p>
-        
-        <label>Country:</label> <input type="text" name="country"><br>
-        <label>City:</label> <input type="text" name="city"><br>
-        <label>District:</label> <input type="text" name="district"><br>
-        <label>Street:</label> <input type="text" name="street"><br>
-        <label>Detail Address:</label> <input type="text" name="detail_address"><br>
-        
-        <br>
-        <button type="submit">Register</button>
-    </form>
+                    <!-- Display Django Error Messages -->
+                    {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
 
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- ACCOUNT INFO -->
+                        <div class="section-title">Account Information</div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Full Name / Username</label>
+                            <input type="text" name="username" class="form-control" required placeholder="John Doe">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" required placeholder="john@example.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" required placeholder="******">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">I am a:</label>
+                            <select name="role" id="roleSelect" class="form-select" onchange="toggleAddress()">
+                                <option value="customer">Customer (I want to buy)</option>
+                                <option value="vendor">Vendor (I want to sell)</option>
+                            </select>
+                        </div>
+
+                        <!-- ADDRESS INFO (Hidden for Vendors) -->
+                        <div id="addressSection">
+                            <div class="section-title mt-4 d-flex justify-content-between">
+                                <span>Shipping Address</span>
+                                <span class="badge bg-light text-primary">Required</span>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Country</label>
+                                    <input type="text" name="country" class="form-control address-field">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">City</label>
+                                    <input type="text" name="city" class="form-control address-field">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">District</label>
+                                    <input type="text" name="district" class="form-control address-field">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Street</label>
+                                    <input type="text" name="street" class="form-control address-field">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Detail Address</label>
+                                <input type="text" name="detail_address" class="form-control address-field" placeholder="Apt, Suite, etc.">
+                            </div>
+                        </div>
+
+                        <div id="vendorMessage" style="display:none;" class="alert alert-info text-center my-4">
+                            Vendors do not need to provide a shipping address.
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="text-muted small">Already have an account? <a href="/login/" class="fw-bold text-primary text-decoration-none">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script to Toggle Address Fields -->
+<script>
+    function toggleAddress() {
+        var role = document.getElementById('roleSelect').value;
+        var addressSection = document.getElementById('addressSection');
+        var vendorMessage = document.getElementById('vendorMessage');
+        var addressFields = document.querySelectorAll('.address-field');
+
+        if (role === 'vendor') {
+            addressSection.style.display = 'none';
+            vendorMessage.style.display = 'block';
+            // Optional: Remove 'required' attribute if you were using HTML5 validation
+            addressFields.forEach(f => f.required = false);
+        } else {
+            addressSection.style.display = 'block';
+            vendorMessage.style.display = 'none';
+            // Optional: Add 'required' attribute back
+            addressFields.forEach(f => f.required = true);
+        }
+    }
+    // Run on load just in case
+    toggleAddress();
+</script>
 
 </body>
 </html>

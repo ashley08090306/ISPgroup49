@@ -1,17 +1,89 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Online Shopping</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 450px;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        .login-header {
+            padding: 2rem 2rem 1rem;
+            text-align: center;
+        }
+        .form-control {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .btn-primary {
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+    </style>
+</head>
 <body>
-    <h2>User Login</h2>
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        {{ form.as_p }}
-        
-        <button type="submit">Login</button>
-    </form>
-    
-    <p>Do not have an account yet? <a href="/register/">Go register</a></p>
+
+<div class="container px-3">
+    <div class="card login-card bg-white">
+        <div class="login-header">
+            <h3 class="fw-bold text-primary">Welcome Back</h3>
+            <p class="text-muted">Please login to continue</p>
+        </div>
+        <div class="card-body p-4 p-md-5 pt-0">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!--
+                   Teammate's views.py uses Django's built-in AuthenticationForm.
+                   Usually it expects fields named 'username' and 'password'.
+                   If form.errors exists, Django will display them if we iterate,
+                   or we can just show a generic error below.
+                -->
+
+                {% if form.errors %}
+                <div class="alert alert-danger py-2 mb-3 small">
+                    Invalid username or password.
+                </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">USERNAME</label>
+                    <input type="text" name="username" class="form-control" required placeholder="Enter your username">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                    <input type="password" name="password" class="form-control" required placeholder="Enter your password">
+                </div>
+
+                <div class="d-grid gap-2 mb-4">
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+
+                <div class="text-center border-top pt-3">
+                    <p class="small text-muted mb-0">Don't have an account?</p>
+                    <a href="/register/" class="text-primary fw-bold text-decoration-none">Create an account</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+</head>
+<body>
+    <h2>Create Account</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <h3>Basic Info</h3>
+        <label>Full Name:</label> 
+        <input type="text" name="username" required><br>
+        
+        <label>Email:</label> 
+        <input type="email" name="email" required><br>
+        
+        <label>Password:</label> 
+        <input type="password" name="password" required><br>
+
+        <h3>Select Role</h3>
+        <select name="role">
+            <option value="customer">Customer (I'm the Customer)</option>
+            <option value="vendor">Vendor (I'm the Vendor)</option>
+        </select>
+        <br>
+
+        <h3>Shipping Address (Required for Customers)</h3>
+        <p style="color: grey; font-size: 0.8em;">(Vendors can skip this section)</p>
+        
+        <label>Country:</label> <input type="text" name="country"><br>
+        <label>City:</label> <input type="text" name="city"><br>
+        <label>District:</label> <input type="text" name="district"><br>
+        <label>Street:</label> <input type="text" name="street"><br>
+        <label>Detail Address:</label> <input type="text" name="detail_address"><br>
+        
+        <br>
+        <button type="submit">Register</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+</body>
+</html>

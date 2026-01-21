@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Store - Luxury Edition</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-black: #000000;
+            --primary-white: #ffffff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--primary-black);
+            background-color: var(--primary-white);
+        }
+        .font-serif { font-family: 'Playfair Display', serif; }
+
+        /* Navbar */
+        .navbar-brand {
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .nav-link {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            color: #000 !important;
+            padding: 0 1rem;
+        }
+        .nav-link:hover { color: #555 !important; }
+
+        /* HERO: Logged Out */
+        .hero-section {
+            position: relative;
+            height: 85vh;
+            background-image: url('https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: top center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .hero-overlay { background: rgba(0,0,0,0.2); position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+
+        /* BANNER: Logged In */
+        .account-banner {
+            background-color: #000;
+            color: #fff;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .account-banner h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 10px;
+        }
+        .account-banner h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #ccc;
+        }
+
+        /* Dashboard Grid */
+        .section-header {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+            color: #999;
+            margin-bottom: 1.5rem;
+        }
+        .dashboard-item {
+            border-top: 1px solid #eee;
+            padding-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .dashboard-icon { width: 24px; height: 24px; }
+
+        /* Buttons */
+        .btn-luxury-white {
+            background-color: white; color: black; border: 1px solid white;
+            padding: 14px 35px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.15em; font-weight: 600;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+        .btn-luxury-white:hover { background-color: black; color: white; border-color: black; }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-md navbar-light bg-white py-4">
+        <div class="container-fluid flex-column">
+            <div class="d-flex justify-content-end w-100 px-5 mb-2 d-none d-md-flex position-relative">
+                <div style="position: absolute; right: 2rem; top: 0;">
+                    {% if user.is_authenticated %}
+                        <a href="/logout/" class="text-dark text-decoration-none small text-uppercase fw-bold" style="letter-spacing: 0.1em;">Logout</a>
+                    {% else %}
+                        <a href="/login/" class="text-dark text-decoration-none me-4 small text-uppercase fw-bold" style="letter-spacing: 0.1em;">Login</a>
+                        <a href="/register/" class="text-dark text-decoration-none small text-uppercase fw-bold" style="letter-spacing: 0.1em;">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <a class="navbar-brand mb-3 mt-1" href="/">RAFAYEL & GRACE</a>
+
+            <div class="collapse navbar-collapse justify-content-center">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="#">Haute Couture</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Fashion</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Fine Jewelry</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Watches</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% if user.is_authenticated %}
+        <!-- LOGGED IN VIEW: Black Banner -->
+        <section class="account-banner">
+            <div>
+                <h4>Welcome</h4>
+                <h1>{{ user.username }}</h1>
+            </div>
+        </section>
+
+        <!-- Dashboard Grid -->
+        <div class="container py-5 my-4">
+            <div class="row g-5">
+                <!-- Col 1: Orders -->
+                <div class="col-md-4">
+                    <div class="section-header">Your Products</div>
+                    <div class="dashboard-item">
+                        <div class="fs-4"><i class="bi bi-box-seam"></i></div> <!-- Bootstrap Icon placeholder -->
+                        <div>
+                            <h4 class="font-serif mb-2">Orders</h4>
+                            <p class="text-muted small fw-light">No orders have been placed yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 2: Wishlist -->
+                <div class="col-md-4">
+                    <div class="section-header">Selections</div>
+                    <div class="dashboard-item">
+                        <div class="fs-4"><i class="bi bi-heart"></i></div>
+                        <div>
+                            <h4 class="font-serif mb-2">Wishlist</h4>
+                            <p class="text-muted small fw-light">Your wishlist is currently empty.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 3: Services -->
+                <div class="col-md-4">
+                    <div class="section-header">Services</div>
+                    <div class="dashboard-item">
+                        <div class="fs-4 fst-italic font-serif fw-bold">R</div>
+                        <div>
+                            <h4 class="font-serif mb-2">Care & Services</h4>
+                            <p class="text-muted small fw-light mb-2">
+                                Bring your fashion, watch or fine jewelry piece to any boutique for maintenance.
+                            </p>
+                            <a href="#" class="text-dark small text-decoration-none border-bottom border-secondary pb-1">Find a store</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Promo (Static for look) -->
+            <div class="row mt-5 pt-5">
+                <div class="col-md-6 mb-4">
+                    <div class="bg-black text-white p-5 h-100 d-flex align-items-center justify-content-center text-center" style="min-height: 300px;">
+                        <div>
+                             <h3 class="font-serif fst-italic display-5">CHANEL</h3>
+                             <p class="small opacity-75">& moi</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="bg-light p-0 h-100" style="min-height: 300px; background-image: url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1974&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- LOGGED OUT VIEW: Hero Image -->
+        <section class="hero-section">
+            <div class="hero-overlay"></div>
+            <div class="hero-content text-center position-relative" style="z-index: 2;">
+                <h5 class="text-uppercase mb-3" style="letter-spacing: 0.3em; font-size: 0.9rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">New Collection</h5>
+                <h1 class="display-3 fw-bold font-serif mb-5" style="text-shadow: 0 4px 10px rgba(0,0,0,0.3);">ELEGANCE REDEFINED</h1>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="/register/" class="btn btn-luxury-white">Join Us</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="container py-5 text-center mt-5">
+             <h2 class="font-serif mb-4 display-6 fst-italic">The Essence of Style</h2>
+             <a href="/login/" class="text-dark fw-bold text-uppercase text-decoration-none border-bottom border-dark pb-1" style="letter-spacing: 0.1em; font-size: 0.8rem;">Log in to your account</a>
+        </div>
+    {% endif %}
+
+    <!-- Chat Icon Floating -->
+    <div style="position: fixed; bottom: 30px; right: 30px; z-index: 100;">
+        <button class="btn btn-white shadow border rounded-0 p-3 bg-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</body>
+</html>

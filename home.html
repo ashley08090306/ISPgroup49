@@ -1,9 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head><title>Home</title></head>
+<head>
+    <title>Home</title>
+</head>
 <body>
     <h1>Welcome to the online store!</h1>
     
-    <a href="/register/">Click here to register</a>
+    {% if user.is_authenticated %}
+        <div style="border: 1px solid green; padding: 10px;">
+            <p>Hello, <strong>{{ user.username }}</strong>!</p>
+            <p>Your Role: {{ user.role }}</p>
+            
+            <a href="/logout/">Logout</a>
+        </div>
+
+    {% else %}
+        <div style="border: 1px solid red; padding: 10px;">
+            <p>You are not logged in.</p>
+            
+            <a href="/login/">Login</a>
+            | 
+            <a href="/register/">Register</a>
+        </div>
+    {% endif %}
+
 </body>
 </html>

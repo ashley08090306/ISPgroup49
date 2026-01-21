@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from .models import User, ShippingAddress
 
 def home(request):
@@ -62,3 +63,24 @@ def register(request):
                 return render(request, 'register.html', {'error': str(e)})
 
     return render(request, 'register.html')
+
+def login_view(request):
+    if request.method == 'POST':
+        # 这里的 data=request.POST 是把用户填的数据交给 Django 验证
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            # 如果用户名密码正确，Django 会把用户对象给我们
+            user = form.get_user()
+            # 登录！
+            login(request, user)
+            # 登录成功去首页
+            return redirect('home')
+    else:
+        # 如果是刚打开页面，创建一个空表单
+        form = AuthenticationForm()
+
+    return render(request, 'login.html', {'form': form})
+
+def logout_view(request):
+    logout(request) # 一键登出，清除 Session
+    return redirect('home') # 登出后回首页

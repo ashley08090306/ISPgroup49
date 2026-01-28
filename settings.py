@@ -123,3 +123,22 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = 'core.User'
+
+
+
+
+# settings.py
+import os
+
+MEDIA_URL = '/media/'  # 媒体文件的 URL 前缀
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # 媒体文件的存储根目录
+
+
+
+
+
+AUTHENTICATION_BACKENDS = (
+    'core.authentication.EmailOrUsernameBackend',  # 自定义认证后端
+    'django.contrib.auth.backends.ModelBackend',  # 保留默认认证后端
+)
+

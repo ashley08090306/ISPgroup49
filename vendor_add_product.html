@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Product - Vendor Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .sidebar { background-color: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; border-right: 1px solid #222; }
+        .sidebar a { color: #999; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; border-left: 4px solid transparent; }
+        .sidebar a:hover { color: #fff; background-color: #1a1a1a; }
+        .sidebar a.active { color: #fff; background-color: #111; border-left: 4px solid #fff; }
+        .user-profile-section { background-color: #1a1a1a; margin-top: auto; padding: 20px; border-top: 1px solid #333; }
+        .user-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .user-info-text h6 { color: #fff; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+        .user-info-text small { color: #aaa; font-size: 0.8rem; display: block; margin-top: 2px; }
+        .btn-logout { margin-top: 15px; color: #ff6b6b; font-size: 0.85rem; display: flex; align-items: center; text-decoration: none; transition: all 0.2s; padding: 5px 0; }
+        .btn-logout:hover { color: #ff4c4c; transform: translateX(3px); }
+        .form-label { font-weight: 600; font-size: 0.9rem; color: #444; }
+        .category-box { max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; background-color: #fff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar p-0">
+                <div class="p-4 text-center border-bottom border-secondary">
+                    <h5 class="mb-0 fw-bold tracking-wider">VENDOR PORTAL</h5>
+                </div>
+                <nav class="mt-3">
+                    <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
+                    <a href="{% url 'vendor_products' %}" class="active"><i class="bi bi-box-seam me-2"></i> My Products</a>
+                    <a href="{% url 'vendor_orders' %}"><i class="bi bi-receipt me-2"></i> Orders</a>
+                    <a href="{% url 'home' %}" target="_blank">
+                        <i class="bi bi-shop me-2"></i> View Shop
+                        <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.7em;"></i>
+                    </a>
+                </nav>
+                <div class="user-profile-section">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">{{ request.user.username|slice:":1"|upper }}</div>
+                        <div class="user-info-text" style="overflow: hidden;">
+                            <h6 class="text-truncate" title="{{ request.user.username }}">{{ request.user.username }}</h6>
+                            <small class="text-truncate" title="{{ request.user.email }}">{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn-logout"><i class="bi bi-box-arrow-right me-2"></i> Log out</a>
+                </div>
+            </div>
+
+            <div class="col-md-10 p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mt-2">Add New Product</h2>
+                    <a href="{% url 'vendor_products' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+
+                <div class="card border-0 shadow-sm p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <h5 class="mb-4 border-bottom pb-2">Product Details</h5>
+                        <div class="mb-4">
+                            <label class="form-label">Product Name *</label>
+                            <input type="text" name="product_name" class="form-control" placeholder="e.g. Classic Silk Scarf" required>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Price ($) *</label>
+                                <input type="number" name="price" step="0.01" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Brand</label>
+                                <input type="text" name="brand" class="form-control" placeholder="e.g. Chanel">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Stock Quantity *</label>
+                                <input type="number" name="stock" id="stockInput" class="form-control" value="1" min="0" required>
+                                <div class="form-text small">If 0, product will be auto-hidden.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Materials</label>
+                            <input type="text" name="materials" class="form-control" placeholder="e.g. 100% Cotton, Gold Plated">
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" rows="5" class="form-control" placeholder="Describe your product (HTML supported)..."></textarea>
+                        </div>
+
+                        <h5 class="mb-4 border-bottom pb-2">Categorization</h5>
+                        <div class="mb-4">
+                            <label class="form-label">Category *</label>
+                            <div class="category-box">
+                                {% if categories %}
+                                    <select name="category" class="form-select" required>
+                                        <option value="">-- Select a Category --</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.category_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    <p class="text-danger small">No categories found. Please ask Admin to add categories.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label">Tags</label>
+                            <input type="text" name="tags" class="form-control" placeholder="Use commas to separate (e.g. New, Sale, Summer)">
+                        </div>
+
+                        <h5 class="mb-4 border-bottom pb-2">Media</h5>
+                        <div class="mb-4">
+                            <label class="form-label">Product Images</label>
+                            <input type="file" name="images" class="form-control" accept="image/*" multiple>
+                            <div class="form-text">First image will be the cover.</div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label">Product Video (Optional)</label>
+                            <input type="file" name="video" class="form-control" accept="video/*">
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="available" id="availableCheck" checked>
+                                <label class="form-check-label" id="availLabel" for="availableCheck">
+                                    Make this product available immediately
+                                </label>
+                            </div>
+                            <div class="form-text">If unchecked (or stock is 0), product will be hidden.</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-dark px-5">Publish Product</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stockInput = document.getElementById('stockInput');
+            const availCheck = document.getElementById('availableCheck');
+            const availLabel = document.getElementById('availLabel');
+
+            function updateAvailability() {
+                const stock = parseInt(stockInput.value) || 0;
+                
+                if (stock <= 0) {
+                    availCheck.checked = false;
+                    availCheck.disabled = true;
+                    availLabel.innerHTML = "Out of Stock (Auto-hidden)";
+                    availLabel.classList.add('text-muted');
+                } else {
+                    if (availCheck.disabled) {
+                        availCheck.disabled = false;
+                        availCheck.checked = true; // 自动勾选！
+                        availLabel.innerHTML = "Make this product available immediately";
+                        availLabel.classList.remove('text-muted');
+                    }
+                }
+            }
+            // 监听输入变化
+            stockInput.addEventListener('input', updateAvailability);
+            // 初始化运行一次（防止用户一进来就看到Stock 1 但是是灰的）
+            updateAvailability();
+        });
+    </script>
+</body>
+</html>

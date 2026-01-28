@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Product - Vendor Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .sidebar { background-color: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; border-right: 1px solid #222; }
+        .sidebar a { color: #999; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; border-left: 4px solid transparent; }
+        .sidebar a:hover { color: #fff; background-color: #1a1a1a; }
+        .sidebar a.active { color: #fff; background-color: #111; border-left: 4px solid #fff; }
+        .user-profile-section { background-color: #1a1a1a; margin-top: auto; padding: 20px; border-top: 1px solid #333; }
+        .user-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .user-info-text h6 { color: #fff; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+        .user-info-text small { color: #aaa; font-size: 0.8rem; display: block; margin-top: 2px; }
+        .btn-logout { margin-top: 15px; color: #ff6b6b; font-size: 0.85rem; display: flex; align-items: center; text-decoration: none; transition: all 0.2s; padding: 5px 0; }
+        .btn-logout:hover { color: #ff4c4c; transform: translateX(3px); }
+        .form-label { font-weight: 600; font-size: 0.9rem; color: #444; }
+        .img-thumbnail { width: 100px; height: 100px; object-fit: cover; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar p-0">
+                <div class="p-4 text-center border-bottom border-secondary">
+                    <h5 class="mb-0 fw-bold tracking-wider">VENDOR PORTAL</h5>
+                </div>
+                <nav class="mt-3">
+                    <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
+                    <a href="{% url 'vendor_products' %}" class="active"><i class="bi bi-box-seam me-2"></i> My Products</a>
+                    <a href="{% url 'vendor_orders' %}"><i class="bi bi-receipt me-2"></i> Orders</a>
+                    <a href="{% url 'home' %}" target="_blank">
+                        <i class="bi bi-shop me-2"></i> View Shop
+                        <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.7em;"></i>
+                    </a>
+                </nav>
+                <div class="user-profile-section">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">{{ request.user.username|slice:":1"|upper }}</div>
+                        <div class="user-info-text" style="overflow: hidden;">
+                            <h6 class="text-truncate" title="{{ request.user.username }}">{{ request.user.username }}</h6>
+                            <small class="text-truncate" title="{{ request.user.email }}">{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn-logout"><i class="bi bi-box-arrow-right me-2"></i> Log out</a>
+                </div>
+            </div>
+
+            <div class="col-md-10 p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mt-2">Edit Product: {{ product.product_name }}</h2>
+                    <a href="{% url 'vendor_products' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+
+                <div class="card border-0 shadow-sm p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Product Name</label>
+                                <input type="text" name="product_name" class="form-control" value="{{ product.product_name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price ($)</label>
+                                <input type="number" step="0.01" name="price" class="form-control" value="{{ product.price }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Brand / Author</label>
+                                <input type="text" name="brand" class="form-control" value="{{ product.brand|default:'' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Materials / Type</label>
+                                <input type="text" name="materials" class="form-control" value="{{ product.materials|default:'' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Stock Quantity</label>
+                                <input type="number" name="stock" id="stockInput" class="form-control" value="{{ product.stock|default:0 }}" min="0" required>
+                                <div class="form-text text-muted" style="font-size: 0.75rem;">Must be ≥ 0. If 0, auto-hidden.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Category</label>
+                                <select name="category" class="form-select">
+                                    <option value="">Select Category</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.id }}" {% if product.category.id == cat.id %}selected{% endif %}>
+                                            {{ cat.category_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tags (comma separated)</label>
+                                <input type="text" name="tags" class="form-control" value="{{ existing_tags }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Detailed Description</label>
+                            <textarea name="description" class="form-control" rows="5">{{ product.description }}</textarea>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" name="available" class="form-check-input" id="availCheck" {% if product.available %}checked{% endif %}>
+                            <label class="form-check-label" id="availLabel" for="availCheck">Available for sale</label>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3">Product Images</h5>
+                        <div class="row g-3 mb-3">
+                            {% for img in product.images.all %}
+                            <div class="col-auto text-center position-relative">
+                                <img src="{{ img.image.url }}" class="img-thumbnail rounded">
+                                <a href="{% url 'delete_product_image' img.id %}" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" style="width: 24px; height: 24px; padding: 0; line-height: 22px;">&times;</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Add New Images</label>
+                            <input type="file" name="new_images" class="form-control" multiple accept="image/*">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Product Video</label>
+                            <div class="p-3 bg-light border rounded mb-2 d-flex justify-content-between align-items-center">
+                                {% if product.video %}
+                                    <div><span class="text-dark fw-bold small"><i class="bi bi-file-earmark-play-fill me-2"></i>Current Video on File</span></div>
+                                    <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#videoPreviewModal" style="font-size: 0.8rem;"><i class="bi bi-play-circle me-1"></i> Preview</button>
+                                {% else %}
+                                    <span class="text-muted small"><i class="bi bi-camera-video-off me-2"></i> No video uploaded yet.</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" name="video" class="form-control" accept="video/*">
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-dark px-5">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="videoPreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Video Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-black text-center p-0">
+                    {% if product.video %}
+                    <video id="previewVideoPlayer" width="100%" controls style="max-height: 80vh;">
+                        <source src="{{ product.video.url }}" type="video/mp4">
+                    </video>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 获取元素
+            const stockInput = document.getElementById('stockInput');
+            const availCheck = document.getElementById('availCheck');
+            const availLabel = document.getElementById('availLabel');
+            const videoModal = document.getElementById('videoPreviewModal');
+
+            // 视频弹窗关闭逻辑
+            if (videoModal) {
+                videoModal.addEventListener('hidden.bs.modal', event => {
+                    const video = document.getElementById('previewVideoPlayer');
+                    if (video) { video.pause(); video.currentTime = 0; }
+                });
+            }
+
+            // 2. 定义库存联动函数
+            function updateAvailability() {
+                const stock = parseInt(stockInput.value) || 0;
+                
+                if (stock <= 0) {
+                    // 如果库存 <= 0：
+                    // 1. 强制取消勾选
+                    // 2. 禁用复选框 (变灰)，防止用户强行勾选
+                    availCheck.checked = false;
+                    availCheck.disabled = true; 
+                    availLabel.innerHTML = "Out of Stock (Auto-hidden)";
+                    availLabel.classList.add('text-muted');
+                } else {
+                    // 如果库存 > 0：
+                    if (availCheck.disabled) {
+                        // 只有当它之前是被禁用(Locked)的状态时，我们才自动帮用户勾选
+                        // 这意味着用户刚刚补货了！
+                        availCheck.disabled = false;
+                        availCheck.checked = true; // ✨ 自动 Active！
+                        availLabel.innerHTML = "Available for sale";
+                        availLabel.classList.remove('text-muted');
+                    }
+                    // 如果之前没被禁用（说明之前也是有货的），保持用户现在的勾选状态，不要乱动。
+                }
+            }
+
+            // 3. 页面加载时运行一次 (处理回显状态)
+            updateAvailability();
+
+            // 4. 监听输入框变化 (实现实时联动)
+            stockInput.addEventListener('input', updateAvailability);
+        });
+    </script>
+</body>
+</html>

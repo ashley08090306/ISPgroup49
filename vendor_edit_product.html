@@ -60,7 +60,7 @@
                 <div class="card border-0 shadow-sm p-4">
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Product Name</label>
@@ -74,11 +74,11 @@
 
                         <div class="row mb-4">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Brand / Author</label>
+                                <label class="form-label">Brand</label>
                                 <input type="text" name="brand" class="form-control" value="{{ product.brand|default:'' }}">
                             </div>
                             <div class="col-md-3 mb-3">
-                                <label class="form-label">Materials / Type</label>
+                                <label class="form-label">Materials</label>
                                 <input type="text" name="materials" class="form-control" value="{{ product.materials|default:'' }}">
                             </div>
                             <div class="col-md-3 mb-3">
@@ -191,13 +191,13 @@
             // 2. 定义库存联动函数
             function updateAvailability() {
                 const stock = parseInt(stockInput.value) || 0;
-                
+
                 if (stock <= 0) {
                     // 如果库存 <= 0：
                     // 1. 强制取消勾选
                     // 2. 禁用复选框 (变灰)，防止用户强行勾选
                     availCheck.checked = false;
-                    availCheck.disabled = true; 
+                    availCheck.disabled = true;
                     availLabel.innerHTML = "Out of Stock (Auto-hidden)";
                     availLabel.classList.add('text-muted');
                 } else {

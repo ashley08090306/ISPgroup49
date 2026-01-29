@@ -1,21 +1,203 @@
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from core.models import User  # 确保导入的是自定义的 User 模型
+# ✨ REMOVED: Review from imports to prevent errors since backend is not ready
 from .models import ShippingAddress, Product, Category, Tag, Order, ProductImage, ShopProfile
-from django.db.models import Sum, Q, F
+from django.db.models import Sum, Q, F, Avg
 from django.contrib.auth import authenticate
 from django.utils.safestring import mark_safe
 from django.urls import reverse
+from django.http import JsonResponse
+import json
 
 
 # ==================== 公共视图 ====================
 
 def home(request):
+    # 如果是商家登录，重定向到仪表盘
     if request.user.is_authenticated and getattr(request.user, 'role', '') == 'vendor':
         return redirect('vendor_dashboard')
-    return render(request, 'home.html')
+
+    # 1. 获取基础数据
+    categories = Category.objects.all()
+    products = Product.objects.filter(available=True, stock__gt=0).order_by('-id')
+
+    # 2. 处理搜索 (Search)
+    search_query = request.GET.get('q')
+    if search_query:
+        products = products.filter(
+            Q(product_name__icontains=search_query) |
+            Q(brand__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # 3. 处理分类过滤 (Category Filter)
+    category_id = request.GET.get('category')
+    current_category = None
+    if category_id:
+        try:
+            current_category = Category.objects.get(id=category_id)
+            products = products.filter(category=current_category)
+        except Category.DoesNotExist:
+            pass
+
+    # 4. 判断是否显示 Hero Banner (只有在没有搜索且没有选分类时显示)
+    show_hero = not search_query and not category_id
+
+    # 5. 定义 Hero Carousel 数据 (使用网络高清图，无需本地 static 配置)
+    # 图片来源: Unsplash (High Fashion / Jewelry / Dark Mood)
+    hero_slides = []
+    if show_hero:
+        # 移除了 URL 和 btn_text，只保留视觉元素
+        hero_slides = [
+            {
+                # 经典的黑白高定风格模特 (Chanel Vibe)
+                'image': 'https://pbs.twimg.com/media/GrXpo4eXoAAQtE9?format=jpg&name=large',
+                'subtitle': 'The Campaign',
+                'title': 'BLOSSOM<br>GRACE',
+                'filter': 'brightness(0.8)' #稍微压暗一点让文字更清晰
+            },
+            {
+                # 珠宝特写 (金色/奢华)
+                'image': 'https://www.essence.com/wp-content/uploads/2025/05/Untitled-design-2025-05-23T102343.012-1920x1080.png',
+                'subtitle': 'Haute Joaillerie',
+                'title': 'EVENING<br>ELEGANCE',
+                'filter': 'brightness(0.7)'
+            },
+            {
+                # 优雅的侧影/耳环
+                'image': 'https://images.hdqwalls.com/wallpapers/jenna-ortega-dior-2023-x5.jpg',
+                'subtitle': 'Iconic Style',
+                'title': 'MODERN<br>MUSE',
+                'filter': 'brightness(0.8)'
+            },
+            {
+                # 极简主义/戒指/手部特写
+                'image': 'https://www.chanel.com/puls-img/c_limit,w_3200/q_auto:good,dpr_auto,f_auto/1764081681922-one-hpjoa-d-majorpush-5760x1800px_1800x5760.jpg',
+                'subtitle': 'Radiance',
+                'title': 'GOLDEN<br>DETAILS',
+                'filter': 'brightness(0.8)'
+            }
+        ]
+
+    context = {
+        'products': products,
+        'categories': categories,
+        'search_query': search_query,
+        'current_category': current_category,
+        'show_hero': show_hero,
+        'hero_slides': hero_slides, # 传递给模板
+    }
+    return render(request, 'home.html', context)
+
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    # ✨ REMOVED: Review submission and fetching logic
+
+    # 获取相关产品 (同分类下的其他产品，排除自己)
+    related_products = Product.objects.filter(category=product.category).exclude(id=product.id)[:4]
+
+    return render(request, 'product_detail.html', {
+        'product': product,
+        'related_products': related_products,
+        # Removed reviews context variables
+    })
+
+# ==================== 购物车系统 (基于 Session) ====================
+
+def add_to_cart(request):
+    """
+    AJAX 添加到购物车
+    Cart Structure in Session:
+    'cart': {
+        'product_id_str': quantity,
+        '1': 2,
+        '5': 1
+    }
+    """
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+
+        if not product_id:
+            return JsonResponse({'status': 'error', 'message': 'Invalid product'}, status=400)
+
+        # 获取购物车 session，如果没有则初始化为空字典
+        cart = request.session.get('cart', {})
+
+        # 更新数量 (默认加1)
+        if product_id in cart:
+            cart[product_id] += 1
+        else:
+            cart[product_id] = 1
+
+        # 保存回 session
+        request.session['cart'] = cart
+        request.session.modified = True # 确保 Django 保存 session
+
+        # 计算总数量
+        total_items = sum(cart.values())
+
+        return JsonResponse({'status': 'success', 'total_items': total_items})
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+def cart_view(request):
+    """
+    查看购物车页面
+    """
+    cart = request.session.get('cart', {})
+    cart_items = []
+
+    # 从数据库获取商品详情
+    if cart:
+        products = Product.objects.filter(id__in=cart.keys())
+        for product in products:
+            quantity = cart.get(str(product.id))
+            if quantity:
+                # 动态给 product 对象添加 quantity 属性，仅用于模板显示
+                product.quantity = quantity
+                product.total_price = product.price * quantity
+                cart_items.append(product)
+
+    # 简单的按 ID 排序，防止刷新后顺序乱跳
+    cart_items.sort(key=lambda x: x.id)
+
+    return render(request, 'cart.html', {'cart_items': cart_items})
+
+def update_cart(request):
+    """
+    AJAX 更新购物车数量 (+ 或 -)
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        product_id = str(data.get('product_id'))
+        action = data.get('action') # 'increase' or 'decrease'
+
+        cart = request.session.get('cart', {})
+
+        if product_id in cart:
+            if action == 'increase':
+                cart[product_id] += 1
+            elif action == 'decrease':
+                cart[product_id] -= 1
+                if cart[product_id] <= 0:
+                    del cart[product_id] # 数量为0则移除
+            elif action == 'remove':
+                del cart[product_id]
+
+            request.session['cart'] = cart
+            request.session.modified = True
+
+            return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+# ==================== 用户认证系统 ====================
 
 def register(request):
     if request.method == 'POST':

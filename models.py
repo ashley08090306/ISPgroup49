@@ -110,4 +110,3 @@ class ShopProfile(models.Model):
         return self.shop_name
 
 
-

@@ -1,28 +1,665 @@
+
+
+
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Home</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAFAYEL & GRACE | HAUTE JOAILLERIE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts: Playfair Display (Serif) & Inter (Sans) -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --chanel-black: #000000;
+            --chanel-white: #ffffff;
+            --chanel-gray: #f5f5f5;
+        }
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            color: var(--chanel-black);
+            background-color: var(--chanel-white);
+            overflow-x: hidden;
+            /* Prevent Google Translate from shifting body */
+            top: 0 !important;
+            position: static !important;
+        }
+
+        /* === Typography === */
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .text-uppercase-tracking { text-transform: uppercase; letter-spacing: 0.15em; }
+        .fw-medium { font-weight: 500; }
+
+        /* === Navbar === */
+        .navbar-top-row {
+            padding: 0 30px;
+            height: 50px;
+            display: flex;
+            justify-content: space-between; /* Changed to space-between to accommodate Language on left or mixed */
+            align-items: center;
+        }
+        .navbar-brand-centered {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 10px;
+        }
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            letter-spacing: 0.2em;
+            color: var(--chanel-black);
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+        .nav-links-row {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            padding-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .nav-link-custom {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--chanel-black);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 5px;
+        }
+        .nav-link-custom:hover, .nav-link-custom.active {
+            color: #555;
+        }
+        .nav-link-custom.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--chanel-black);
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            padding: 0 10px;
+            font-size: 1.2rem;
+            color: var(--chanel-black);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* === Language Selector === */
+        .lang-btn {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            padding: 0;
+            color: black;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .lang-dropdown-menu {
+            border: none;
+            border-radius: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 10px 0;
+            min-width: 120px;
+        }
+        .lang-item {
+            font-size: 0.8rem;
+            padding: 8px 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #333;
+            transition: background 0.2s;
+        }
+        .lang-item:hover {
+            background-color: #f5f5f5;
+        }
+        /* Hide Google's Default Widget */
+        .goog-te-banner-frame { display: none !important; }
+        .goog-te-gadget { display: none !important; }
+        #google_translate_element { display: none !important; }
+        .skiptranslate { display: none !important; }
+        body > .skiptranslate { display: none !important; }
+
+        /* === Search Overlay (The "SEARCH" Screen) === */
+        .search-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: white;
+            z-index: 2000;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            padding: 40px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .search-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .search-header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 60px;
+        }
+        .search-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #555;
+            font-weight: 400;
+        }
+        .btn-close-search {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 1.5rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .search-input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            border-bottom: 1px solid #000;
+        }
+        .search-input {
+            width: 100%;
+            border: none;
+            font-size: 1.5rem;
+            font-family: 'Playfair Display', serif;
+            padding: 15px 0;
+            outline: none;
+            text-transform: uppercase;
+        }
+        .search-suggestions {
+            max-width: 800px;
+            margin: 40px auto;
+            width: 100%;
+        }
+        .suggestion-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 20px;
+        }
+        .suggestion-item {
+            display: block;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: black;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        /* === Carousel Hero Section (Landscape Optimized) === */
+        .carousel-hero-item {
+            height: 85vh;
+            background-color: #1a1a1a; /* Fallback dark color if image missing */
+            background-size: cover;
+            /*
+               Updated for Portrait/Celebrity Images:
+               Center 20% keeps the focus slightly higher (on faces) rather than dead center (chest/torso).
+            */
+            background-position: center center;
+            position: relative;
+            transition: transform 10s ease; /* subtle zoom effect */
+        }
+        .carousel-item.active .carousel-hero-item {
+            transform: scale(1.02);
+        }
+        .carousel-hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Stronger gradient at bottom for text readability */
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 80px;
+            text-align: center;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* ✨✨✨ Custom Arrow Styling (White Arrow, Black Circle) ✨✨✨ */
+        .carousel-control-prev, .carousel-control-next {
+            width: 8%; /* Increased width for better clickability */
+            opacity: 1; /* Remove default opacity to see buttons clearly */
+        }
+
+        .carousel-control-prev-icon, .carousel-control-next-icon {
+            /* Black Circular Background */
+            background-color: #000;
+            border-radius: 50%;
+
+            /* Sizing */
+            width: 3.5rem;
+            height: 3.5rem;
+
+            /* Center the arrow icon inside and size it appropriately */
+            background-size: 50%;
+            background-position: center;
+
+            /* Ensure arrow remains WHITE (Bootstrap default) - DO NOT INVERT */
+            filter: none;
+
+            /* Subtle shadow for depth */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+
+            /* Animation */
+            transition: all 0.3s ease;
+        }
+
+        /* Hover Effects */
+        .carousel-control-prev:hover .carousel-control-prev-icon,
+        .carousel-control-next:hover .carousel-control-next-icon {
+            background-color: #333; /* Slightly lighter black on hover */
+            transform: scale(1.1); /* Slight zoom on hover */
+        }
+
+        /* Reusing Hero Typography */
+        .hero-title {
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        /* Button style removed as requested, but keeping class if needed later, or can remove block below */
+        .btn-hero {
+            background-color: white;
+            color: black;
+            padding: 15px 40px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid white;
+            transition: all 0.3s;
+        }
+        .btn-hero:hover {
+            background-color: black;
+            color: white;
+            border-color: black;
+        }
+
+        /* === Welcome Banner (Logged In View - Chanel Style) === */
+        .welcome-section {
+            background-color: var(--chanel-black);
+            color: var(--chanel-white);
+            height: 45vh; /* Occupy top area like dashboard */
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            /* No margin bottom, or adjust as needed */
+        }
+        .welcome-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.25em; /* Wide tracking for WELCOME */
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .welcome-username {
+            font-family: 'Inter', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        /* === Product Grid === */
+        .product-grid-section {
+            padding: 60px 40px;
+        }
+        .product-card {
+            border: none;
+            margin-bottom: 40px;
+            transition: opacity 0.3s;
+        }
+        .product-card:hover {
+            opacity: 0.8;
+        }
+        /* ✨✨✨ ADDED: Hover underline effect for product names ✨✨✨ */
+        .product-card:hover .product-name {
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 4px;
+        }
+
+        .product-img-container {
+            width: 100%;
+            padding-top: 100%; /* 1:1 Aspect Ratio */
+            position: relative;
+            background-color: #f9f9f9;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .product-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .product-info {
+            text-align: center;
+        }
+        .product-name {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 5px;
+            color: black;
+            text-decoration: none;
+            display: block;
+        }
+        .product-price {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        /* === Footer === */
+        .footer {
+            background-color: black;
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+        .footer a {
+            color: #999;
+            text-decoration: none;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 0 15px;
+        }
+
+        /* === Responsive Adjustments === */
+        @media (max-width: 768px) {
+            .brand-logo { font-size: 1.8rem; }
+            .nav-links-row { display: none; } /* Hide regular nav on mobile */
+            .navbar-top-row { justify-content: space-between; }
+            .hero-title { font-size: 2rem; }
+            .welcome-username { font-size: 2rem; }
+            .product-grid-section { padding: 30px 15px; }
+            .carousel-hero-item { height: 70vh; } /* Slightly smaller on mobile */
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to the online store!</h1>
-    
-    {% if user.is_authenticated %}
-        <div style="border: 1px solid green; padding: 10px;">
-            <p>Hello, <strong>{{ user.username }}</strong>!</p>
-            <p>Your Role: {{ user.role }}</p>
-            
-            <a href="/logout/">Logout</a>
+
+    <!-- SEARCH OVERLAY -->
+    <div id="searchOverlay" class="search-overlay">
+        <div class="search-header">
+            <h2 class="search-title">SEARCH</h2>
+            <button class="btn-close-search" onclick="toggleSearch()"><i class="bi bi-x-lg"></i></button>
         </div>
 
-    {% else %}
-        <div style="border: 1px solid red; padding: 10px;">
-            <p>You are not logged in.</p>
-            
-            <a href="/login/">Login</a>
-            | 
-            <a href="/register/">Register</a>
+        <form action="{% url 'home' %}" method="GET" class="w-100">
+            <div class="search-input-wrapper">
+                <input type="text" name="q" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off" value="{{ search_query|default:'' }}">
+            </div>
+            <div class="text-center mt-4">
+                 <button type="submit" class="btn btn-dark rounded-0 px-5 py-2 text-uppercase" style="letter-spacing: 2px;">View Results</button>
+            </div>
+        </form>
+
+        <div class="search-suggestions">
+            <div class="suggestion-title">Suggestions</div>
+            <a href="{% url 'home' %}?q=CHANEL" class="suggestion-item">CHANEL</a>
+            <a href="{% url 'home' %}?q=DIOR" class="suggestion-item">DIOR</a>
+            <a href="{% url 'home' %}?q=London" class="suggestion-item">London</a>
+            <a href="{% url 'home' %}?q=Yifei Liu" class="suggestion-item">Yifei Liu</a>
+            <a href="{% url 'home' %}" class="suggestion-item">ALL PRODUCT</a>
         </div>
+    </div>
+
+    <!-- MAIN NAVBAR -->
+    <header>
+        <div class="navbar-top-row">
+            <!-- Hidden Google Widget (Required for Logic) -->
+            <div id="google_translate_element"></div>
+
+            <!-- Left Side: Language (On Desktop) or Empty -->
+            <div class="d-none d-md-block">
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        LANGUAGE
+                    </button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Side: Icons -->
+            <div class="d-flex gap-4">
+                <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'logout' %}" class="icon-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+                    <span class="text-uppercase small fw-bold mt-1 d-none d-md-inline" style="letter-spacing: 1px;">{{ user.username }}</span>
+                {% else %}
+                    <a href="{% url 'login' %}" class="icon-btn" title="Login"><i class="bi bi-person"></i></a>
+                {% endif %}
+                <a href="{% url 'cart_view' %}" class="icon-btn"><i class="bi bi-bag"></i></a>
+
+                <!-- Mobile Language Icon (Visible only on small screens) -->
+                <div class="dropdown d-md-none">
+                     <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-globe"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')"繁體中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar-brand-centered">
+            <a href="{% url 'home' %}" class="brand-logo">RAFAYEL & GRACE</a>
+        </div>
+
+        <nav class="nav-links-row">
+            <a href="{% url 'home' %}" class="nav-link-custom {% if not current_category and not search_query %}active{% endif %}">Home</a>
+            {% for cat in categories %}
+                <a href="{% url 'home' %}?category={{ cat.id }}" class="nav-link-custom {% if current_category.id == cat.id %}active{% endif %}">
+                    {{ cat.category_name }}
+                </a>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <!-- HERO SECTION OR WELCOME BANNER -->
+    {% if show_hero %}
+        {% if user.is_authenticated %}
+            <!-- LOGGED IN: Black Welcome Banner -->
+            <section class="welcome-section">
+                <div class="welcome-subtitle">Welcome</div>
+                <div class="welcome-username">{{ user.username }}</div>
+            </section>
+        {% else %}
+            <!-- GUEST: Full Screen Carousel (Uses Remote Images) -->
+            <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000">
+                <div class="carousel-inner">
+                    {% for slide in hero_slides %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <!-- Removed clickable <a> wrapper, now just a display div -->
+                        <div class="carousel-hero-item" style="background-image: url('{{ slide.image }}'); filter: {{ slide.filter }};">
+                            <div class="carousel-hero-overlay">
+                                <div class="text-uppercase-tracking mb-2 fw-bold text-white" style="font-size: 0.9rem;">{{ slide.subtitle }}</div>
+                                <h1 class="hero-title text-white">{{ slide.title|safe }}</h1>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Controls -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        {% endif %}
     {% endif %}
 
+    <!-- PRODUCT RESULTS HEADER -->
+    {% if search_query or current_category %}
+    <div class="container mt-5 pt-4 text-center">
+        {% if search_query %}
+            <h4 class="font-serif fst-italic">Search Results for "{{ search_query }}"</h4>
+        {% elif current_category %}
+             <h4 class="font-serif fst-italic">{{ current_category.category_name }} Collection</h4>
+        {% endif %}
+        <hr class="mx-auto" style="width: 50px; border-color: black; opacity: 1;">
+    </div>
+    {% endif %}
+
+    <!-- PRODUCT GRID -->
+    <section id="collection" class="product-grid-section">
+        <div class="container">
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-6 col-md-3">
+                    <div class="product-card">
+                        <!-- LINK to Detail Page -->
+                        <a href="{% url 'product_detail' product.id %}">
+                            <div class="product-img-container">
+                                {% if product.images.first %}
+                                    <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
+                                {% else %}
+                                    <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">
+                                        No Image
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        <div class="product-info">
+                            <!-- LINK to Detail Page -->
+                            <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
+                            <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
+                                {% if product.stock <= 0 %}
+                                    <span class="text-muted text-decoration-line-through">Sold Out</span>
+                                {% else %}
+                                    USD {{ product.price }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <h3 class="font-serif mb-3">No products found.</h3>
+                    <p class="text-muted">Try a different search term or category.</p>
+                    <a href="{% url 'home' %}" class="btn btn-outline-dark rounded-0 px-4 mt-3 text-uppercase" style="letter-spacing: 1px;">View All Collections</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="mb-4">
+                <a href="#">Contact Us</a>
+                <a href="#">Legal</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">FAQ</a>
+            </div>
+            <div class="text-uppercase small" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 1px;">
+                &copy; 2026 RAFAYEL & GRACE. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function toggleSearch() {
+            const overlay = document.getElementById('searchOverlay');
+            overlay.classList.toggle('active');
+
+            if (overlay.classList.contains('active')) {
+                const input = overlay.querySelector('.search-input');
+                setTimeout(() => input.focus(), 100);
+            }
+        }
+
+        /* ✨ Google Translate Custom Integration ✨ */
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es',
+                autoDisplay: false,
+            }, 'google_translate_element');
+        }
+
+        function setLanguage(lang) {
+            // Google Translate uses a cookie named 'googtrans' to track the language
+            // Format: /source/target (e.g., /en/zh-CN)
+            document.cookie = "googtrans=/en/" + lang + "; path=/";
+            location.reload();
+        }
+
+        // Initialize script
+        const script = document.createElement('script');
+        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>

@@ -1,0 +1,396 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Bag | RAFAYEL & GRACE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --chanel-black: #000000;
+            --chanel-white: #ffffff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--chanel-black);
+            background-color: var(--chanel-white);
+            /* Prevent Google Translate from shifting body */
+            top: 0 !important;
+            position: static !important;
+        }
+        .page-header {
+            text-align: center;
+            padding: 60px 0 40px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+        .font-serif { font-family: 'Playfair Display', serif; }
+
+        /* Cart Table */
+        .cart-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .cart-table th {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid #000;
+            padding: 15px 0;
+            text-align: left;
+        }
+        .cart-table td {
+            padding: 20px 0;
+            vertical-align: middle;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Item Display */
+        .item-row { display: flex; align-items: center; gap: 20px; }
+        .item-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            background-color: #f9f9f9;
+        }
+        .item-name {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            color: black;
+            text-decoration: none;
+        }
+        .item-ref { font-size: 0.75rem; color: #888; margin-top: 5px; }
+
+        /* Quantity Control */
+        .qty-control {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            width: fit-content;
+        }
+        .qty-btn {
+            background: none;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .qty-display {
+            padding: 0 10px;
+            font-size: 0.9rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Checkbox Custom */
+        .form-check-input {
+            cursor: pointer;
+            border-color: #000;
+            width: 1.2em;
+            height: 1.2em;
+        }
+        .form-check-input:checked {
+            background-color: #000;
+            border-color: #000;
+        }
+
+        /* Summary */
+        .summary-box {
+            background-color: #f9f9f9;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .total-row {
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        .btn-checkout {
+            width: 100%;
+            background-color: black;
+            color: white;
+            padding: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: opacity 0.3s;
+        }
+        .btn-checkout:hover { opacity: 0.8; }
+        .btn-checkout:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .btn-back {
+            text-decoration: none;
+            color: black;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* === Language Selector (Cart Page) === */
+        .cart-lang-wrapper {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+        }
+        .lang-btn {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            padding: 0;
+            color: black;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .lang-dropdown-menu {
+            border: none;
+            border-radius: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 10px 0;
+            min-width: 120px;
+        }
+        .lang-item {
+            font-size: 0.8rem;
+            padding: 8px 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #333;
+            transition: background 0.2s;
+        }
+        .lang-item:hover { background-color: #f5f5f5; }
+
+        /* Hide Google's Default Widget */
+        .goog-te-banner-frame { display: none !important; }
+        .goog-te-gadget { display: none !important; }
+        #google_translate_element { display: none !important; }
+        .skiptranslate { display: none !important; }
+        body > .skiptranslate { display: none !important; }
+    </style>
+</head>
+<body style="position: relative;">
+
+    <!-- Hidden Google Widget -->
+    <div id="google_translate_element"></div>
+
+    <!-- Language Selector Top Right -->
+    <div class="cart-lang-wrapper">
+        <div class="dropdown">
+            <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                LANGUAGE
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container py-5" style="max-width: 1000px;">
+        <a href="{% url 'home' %}" class="btn-back"><i class="bi bi-arrow-left me-2"></i> Continue Shopping</a>
+
+        <div class="page-header">
+            <h1 class="font-serif">Shopping Bag</h1>
+        </div>
+
+        {% if cart_items %}
+        <div class="row">
+            <div class="col-md-8">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"><input type="checkbox" class="form-check-input" id="selectAll" checked onchange="toggleAll(this)"></th>
+                            <th>Product</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart_items %}
+                        <tr id="row-{{ item.id }}">
+                            <td>
+                                <!-- Item Checkbox -->
+                                <input type="checkbox" class="form-check-input item-check"
+                                       data-id="{{ item.id }}"
+                                       data-price="{{ item.price }}"
+                                       data-qty="{{ item.quantity }}"
+                                       checked
+                                       onchange="calculateTotal()">
+                            </td>
+                            <td>
+                                <div class="item-row">
+                                    {% if item.images.first %}
+                                        <img src="{{ item.images.first.image.url }}" class="item-img">
+                                    {% else %}
+                                        <div class="item-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{% url 'product_detail' item.id %}" class="item-name">{{ item.product_name }}</a>
+                                        <div class="item-ref">Ref: {{ item.id }}</div>
+                                        <div class="mt-1 small">USD {{ item.price }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center">
+                                    <div class="qty-control">
+                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
+                                        <span class="qty-display" id="qty-{{ item.id }}">{{ item.quantity }}</span>
+                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'increase')">+</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-link text-muted small text-decoration-none mt-2 p-0" onclick="updateQty({{ item.id }}, 'remove')">Remove</button>
+                            </td>
+                            <td class="text-end" id="price-total-{{ item.id }}">
+                                USD {{ item.total_price }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Sidebar -->
+            <div class="col-md-4">
+                <div class="summary-box">
+                    <h5 class="font-serif mb-4">Summary</h5>
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span id="subtotalDisplay">$0.00</span>
+                    </div>
+                    <div class="summary-row text-muted small">
+                        <span>Shipping</span>
+                        <span>Calculated at checkout</span>
+                    </div>
+                    <div class="summary-row total-row">
+                        <span>Total</span>
+                        <span id="totalDisplay">$0.00</span>
+                    </div>
+
+                    <button class="btn-checkout" id="checkoutBtn">Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div class="text-center py-5">
+                <h3 class="font-serif mb-3">Your bag is empty</h3>
+                <p class="text-muted">Discover our latest collections.</p>
+                <a href="{% url 'home' %}" class="btn btn-dark rounded-0 px-5 py-3 mt-3 text-uppercase" style="letter-spacing: 2px;">Start Shopping</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Update Quantity AJAX
+        function updateQty(productId, action) {
+            fetch("{% url 'update_cart' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ product_id: productId, action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    location.reload(); // Simple reload to refresh pricing/display
+                }
+            });
+        }
+
+        // Selection Logic
+        function toggleAll(source) {
+            const checkboxes = document.querySelectorAll('.item-check');
+            checkboxes.forEach(cb => {
+                cb.checked = source.checked;
+            });
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            let hasSelection = false;
+            const checkboxes = document.querySelectorAll('.item-check');
+
+            checkboxes.forEach(cb => {
+                if(cb.checked) {
+                    hasSelection = true;
+                    const price = parseFloat(cb.getAttribute('data-price'));
+                    const qty = parseInt(cb.getAttribute('data-qty'));
+                    total += price * qty;
+                }
+            });
+
+            // Update UI
+            const formattedTotal = "USD " + total.toFixed(2);
+            document.getElementById('subtotalDisplay').innerText = formattedTotal;
+            document.getElementById('totalDisplay').innerText = formattedTotal;
+
+            // Enable/Disable Checkout
+            document.getElementById('checkoutBtn').disabled = !hasSelection;
+
+            // Update Select All state based on individual checks
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const selectAllCb = document.getElementById('selectAll');
+            if(selectAllCb) selectAllCb.checked = allChecked;
+        }
+
+        // Run calculation on load
+        document.addEventListener('DOMContentLoaded', calculateTotal);
+
+        /* ✨ Google Translate Custom Integration ✨ */
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es',
+                autoDisplay: false,
+            }, 'google_translate_element');
+        }
+
+        function setLanguage(lang) {
+            document.cookie = "googtrans=/en/" + lang + "; path=/";
+            location.reload();
+        }
+
+        // Initialize script
+        const script = document.createElement('script');
+        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>

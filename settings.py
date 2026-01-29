@@ -141,4 +141,3 @@ AUTHENTICATION_BACKENDS = (
     'core.authentication.EmailOrUsernameBackend',  # 自定义认证后端
     'django.contrib.auth.backends.ModelBackend',  # 保留默认认证后端
 )
-

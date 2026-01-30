@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -6,11 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ product.product_name }} | RAFAYEL & GRACE</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -355,7 +351,6 @@
     </style>
 </head>
 <body>
-    <!-- SEARCH OVERLAY -->
     <div id="searchOverlay" class="search-overlay">
         <div class="search-header">
             <h2 class="search-title">SEARCH</h2>
@@ -381,12 +376,9 @@
         </div>
     </div>
 
-    <!-- Header -->
     <div class="navbar-top-row">
-        <!-- Hidden Google Widget -->
         <div id="google_translate_element"></div>
 
-        <!-- Left Side: Language (Visible on Desktop) -->
         <div class="d-none d-md-block">
              <div class="dropdown">
                 <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -404,7 +396,6 @@
             </div>
         </div>
 
-        <!-- Right Side: Icons -->
         <div class="d-flex gap-4">
             <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
             {% if user.is_authenticated %}
@@ -415,7 +406,6 @@
             {% endif %}
             <a href="{% url 'cart_view' %}" class="icon-btn" id="navBagIcon"><i class="bi bi-bag"></i></a>
 
-            <!-- Mobile Language Icon -->
             <div class="dropdown d-md-none">
                 <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                    <i class="bi bi-globe"></i>
@@ -437,7 +427,6 @@
     </div>
 
     <div class="detail-container">
-        <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4 d-none d-md-block">
             <ol class="breadcrumb text-uppercase small" style="font-size: 0.7rem; letter-spacing: 0.1em;">
                 <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none text-muted">Home</a></li>
@@ -449,13 +438,11 @@
         </nav>
 
         <div class="row">
-            <!-- Images Column -->
             <div class="col-md-7">
                 <div class="image-gallery">
                     {% if product.images.exists %}
                         <img id="mainImage" src="{{ product.images.first.image.url }}" class="main-image" alt="{{ product.product_name }}">
 
-                        <!-- Navigation Arrows (Added) -->
                         {% if product.images.count > 1 %}
                             <button class="gallery-nav-btn prev" onclick="prevImage()"><i class="bi bi-chevron-left"></i></button>
                             <button class="gallery-nav-btn next" onclick="nextImage()"><i class="bi bi-chevron-right"></i></button>
@@ -463,7 +450,6 @@
 
                         <div class="thumbnail-container">
                             {% for img in product.images.all %}
-                                <!-- Added index argument to selectImage -->
                                 <img src="{{ img.image.url }}" class="thumbnail {% if forloop.first %}active{% endif %}" onclick="selectImage({{ forloop.counter0 }})">
                             {% endfor %}
                         </div>
@@ -473,7 +459,6 @@
                 </div>
             </div>
 
-            <!-- Info Column -->
             <div class="col-md-5 product-info-col">
                 {% if product.brand %}
                     <div class="product-brand">{{ product.brand }}</div>
@@ -487,12 +472,16 @@
                     {{ product.description|linebreaks }}
                 </div>
 
-                <!-- Add to Cart / Availability -->
                 {% if product.stock > 0 and product.available %}
-                    <!-- ✨ UPDATED: Logic to require login for Add to Bag ✨ -->
                     <div class="d-grid">
                         {% if user.is_authenticated %}
-                            <button type="button" class="btn-add-cart" id="addToBagBtn" onclick="addToBag({{ product.id }})">Add to Bag</button>
+                            {% if user.role == 'vendor' %}
+                                <button type="button" class="btn-add-cart" disabled style="background-color: #666; border-color: #666; cursor: not-allowed;">
+                                    Vendor Account: Purchase Disabled
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn-add-cart" id="addToBagBtn" onclick="addToBag({{ product.id }})">Add to Bag</button>
+                            {% endif %}
                         {% else %}
                             <a href="{% url 'login' %}?next={{ request.path }}" class="btn-add-cart d-block text-decoration-none text-center" style="display: flex; align-items: center; justify-content: center;">Sign In to Purchase</a>
                         {% endif %}
@@ -510,7 +499,6 @@
             </div>
         </div>
 
-        <!-- Related Products -->
         {% if related_products %}
         <div class="related-section">
             <h3 class="section-title">You May Also Like</h3>
@@ -534,7 +522,6 @@
         {% endif %}
     </div>
 
-    <!-- Footer -->
     <footer class="footer mt-5">
         <div class="container text-center">
             <div class="text-uppercase small" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 1px;">

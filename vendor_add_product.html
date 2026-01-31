@@ -173,5 +173,24 @@
             updateAvailability();
         });
     </script>
+    <script>
+        (function() {
+            // 注意：这里需要确保你已经添加了 'heartbeat' 的 url pattern
+            const HEARTBEAT_URL = "{% url 'heartbeat' %}";
+            const INTERVAL = 20000; // 20 seconds (Must be less than SESSION_COOKIE_AGE which is 60)
+
+            function sendHeartbeat() {
+                fetch(HEARTBEAT_URL, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).catch(err => console.log('Heartbeat failed:', err));
+            }
+
+            // Start heartbeat loop immediately
+            setInterval(sendHeartbeat, INTERVAL);
+        })();
+    </script>
 </body>
 </html>

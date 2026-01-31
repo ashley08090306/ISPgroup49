@@ -1,0 +1,19 @@
+<script>
+    (function() {
+        // 确保你的 urls.py 里有 name='heartbeat'
+        const HEARTBEAT_URL = "{% url 'heartbeat' %}"; 
+        const INTERVAL = 20000; // 20秒一次
+
+        function sendHeartbeat() {
+            fetch(HEARTBEAT_URL, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).catch(err => console.log('Heartbeat failed:', err));
+        }
+
+        // 页面加载后立即启动
+        setInterval(sendHeartbeat, INTERVAL);
+    })();
+</script>

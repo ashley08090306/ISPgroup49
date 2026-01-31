@@ -40,6 +40,8 @@ urlpatterns = [
     path("vendor/products/toggle/<int:product_id>/", views.toggle_product_availability, name="toggle_product_availability"),
     path("vendor/products/image/delete/<int:image_id>/", views.delete_product_image, name="delete_product_image"),
     path("vendor/orders/", views.vendor_orders, name="vendor_orders"),
+
+    path('heartbeat/', views.heartbeat, name='heartbeat'),
 ]
 
 # Serve media files in development

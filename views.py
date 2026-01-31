@@ -8,7 +8,7 @@ from django.db.models import Sum, Q, F, Avg
 from django.contrib.auth import authenticate
 from django.utils.safestring import mark_safe
 from django.urls import reverse
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import json
 
 
@@ -200,7 +200,7 @@ def register(request):
                     return render(request, 'register.html', {
                         'error': f'Username "{username}" already taken. Try adding numbers or using a different name.'
                     })
-                
+
                 # 2. 检查邮箱
                 if User.objects.filter(email=email).exists():
                     login_url = reverse('login')
@@ -218,7 +218,7 @@ def register(request):
 
                 # 必须手动指定后端
                 user.backend = 'core.authentication.EmailOrUsernameBackend'
-                
+
                 login(request, user)
 
                 if role == 'vendor':
@@ -243,7 +243,7 @@ def login_view(request):
         if user is not None:
             # 登录成功
             login(request, user)
-            
+
             # ✨✨✨【重点修复：优先级调整】✨✨✨
             # 必须先把 Vendor 踢去 Dashboard，然后再去管 next 参数
             # 这样即使 Vendor 是从 Product Detail 页点击登录的，也会被强制转走
@@ -254,7 +254,7 @@ def login_view(request):
             next_url = request.GET.get('next')
             if next_url:
                 return redirect(next_url)
-            
+
             # 默认去首页
             return redirect('home')
         else:
@@ -312,7 +312,7 @@ def vendor_myshop(request):
         shop.district = request.POST.get('district')
         shop.street = request.POST.get('street')
         shop.detail_address = request.POST.get('detail_address')
-        shop.save() 
+        shop.save()
         return redirect('vendor_myshop')
 
     context = {
@@ -351,16 +351,16 @@ def vendor_add_product(request):
         brand = request.POST.get('brand')
         materials = request.POST.get('materials')
         description = request.POST.get('description')
-        
+
         try:
             stock = int(request.POST.get('stock', 0))
         except ValueError:
             stock = 0
-        
+
         is_available = request.POST.get('available') == 'on'
 
         if stock <= 0:
-            is_available = False 
+            is_available = False
             stock = 0
 
         category_id = request.POST.get('category')
@@ -417,7 +417,7 @@ def toggle_product_availability(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
     if product.stock <= 0 and not product.available:
-        pass 
+        pass
     else:
         product.available = not product.available
         product.save()
@@ -456,7 +456,7 @@ def vendor_edit_product(request, product_id):
         product.brand = request.POST.get('brand')
         product.materials = request.POST.get('materials')
         product.description = request.POST.get('description')
-        
+
         try:
             new_stock = int(request.POST.get('stock', 0))
         except ValueError:
@@ -467,7 +467,7 @@ def vendor_edit_product(request, product_id):
 
         if product.stock <= 0:
             product.available = False
-            product.stock = 0 
+            product.stock = 0
         else:
             product.available = user_wants_available
 
@@ -495,7 +495,7 @@ def vendor_edit_product(request, product_id):
         for image in new_images:
             ProductImage.objects.create(product=product, image=image)
 
-        product.save() 
+        product.save()
         return redirect('vendor_products')
 
     categories = Category.objects.all()
@@ -516,3 +516,12 @@ def delete_product_image(request, image_id):
     product_id = image.product.id
     image.delete()
     return redirect('vendor_edit_product', product_id=product_id)
+
+def heartbeat(request):
+    """
+    心跳接口：仅用于保持 Session 活跃
+    前端 JS 会每隔一段时间调用一次
+    """
+    if request.user.is_authenticated:
+        request.session.modified = True # 强制刷新 Session 时间
+    return HttpResponse("alive")

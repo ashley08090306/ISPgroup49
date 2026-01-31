@@ -142,4 +142,14 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # 保留默认认证后端
 )
 
+
+# 1. Session 有效期设为 60 秒 (你可以根据演示需求调整，比如 120)
+# 这意味着如果用户关闭浏览器，60秒后账号自动失效
+SESSION_COOKIE_AGE = 180
+
+# 2. 每次请求都自动刷新 Session 时间
+# 只要 JS 的心跳还在发，Session 就永远不会过期
+SESSION_SAVE_EVERY_REQUEST = True
+
+# 3. 确保关闭浏览器也清理 (双重保险)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True

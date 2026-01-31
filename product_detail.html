@@ -200,29 +200,56 @@
         .image-gallery {
             position: relative;
         }
-        .main-image {
+        
+        /* ✨✨✨ Updated Media Styles ✨✨✨ */
+        .media-wrapper {
             width: 100%;
             height: auto;
-            object-fit: cover;
-            margin-bottom: 20px;
+            position: relative;
             background-color: #f9f9f9;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .main-media-item {
+            width: 100%;
+            display: block;
+            object-fit: cover;
         }
         .thumbnail-container {
             display: flex;
             gap: 10px;
             overflow-x: auto;
         }
-        .thumbnail {
+        /* New Wrapper for thumbnails to handle clicks reliably */
+        .thumbnail-wrapper {
+            position: relative;
             width: 80px;
             height: 80px;
-            object-fit: cover;
+            flex-shrink: 0;
             cursor: pointer;
+        }
+        .thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             opacity: 0.6;
             transition: opacity 0.2s;
+            border: 1px solid transparent; /* Prepare for border */
         }
         .thumbnail:hover, .thumbnail.active {
             opacity: 1;
             border: 1px solid black;
+        }
+        /* Video Icon Overlay for Thumbnail */
+        .video-icon-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5rem;
+            pointer-events: none;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         /* Arrows for Gallery */
@@ -440,21 +467,39 @@
         <div class="row">
             <div class="col-md-7">
                 <div class="image-gallery">
-                    {% if product.images.exists %}
-                        <img id="mainImage" src="{{ product.images.first.image.url }}" class="main-image" alt="{{ product.product_name }}">
+                    
+                    <div class="media-wrapper">
+                        <img id="mainImage" src="" class="main-media-item" alt="Product Image" style="display: none;">
+                        
+                        <video id="mainVideo" class="main-media-item" controls style="display: none;">
+                            <source id="mainVideoSource" src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
 
-                        {% if product.images.count > 1 %}
-                            <button class="gallery-nav-btn prev" onclick="prevImage()"><i class="bi bi-chevron-left"></i></button>
-                            <button class="gallery-nav-btn next" onclick="nextImage()"><i class="bi bi-chevron-right"></i></button>
+                        <button class="gallery-nav-btn prev" onclick="prevMedia()"><i class="bi bi-chevron-left"></i></button>
+                        <button class="gallery-nav-btn next" onclick="nextMedia()"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+
+                    <div class="thumbnail-container">
+                        {% for img in product.images.all %}
+                            <div class="thumbnail-wrapper" onclick="selectMedia({{ forloop.counter0 }})">
+                                <img src="{{ img.image.url }}" class="thumbnail" id="thumb-{{ forloop.counter0 }}">
+                            </div>
+                        {% endfor %}
+
+                        {% if product.video %}
+                            <div class="thumbnail-wrapper" onclick="selectMedia({{ product.images.count }})">
+                                <div class="thumbnail d-flex align-items-center justify-content-center bg-dark text-white" id="thumb-{{ product.images.count }}">
+                                    </div>
+                                <div class="video-icon-overlay"><i class="bi bi-play-circle-fill"></i></div>
+                            </div>
                         {% endif %}
-
-                        <div class="thumbnail-container">
-                            {% for img in product.images.all %}
-                                <img src="{{ img.image.url }}" class="thumbnail {% if forloop.first %}active{% endif %}" onclick="selectImage({{ forloop.counter0 }})">
-                            {% endfor %}
+                    </div>
+                    
+                    {% if not product.images.exists and not product.video %}
+                        <div class="main-media-item d-flex align-items-center justify-content-center text-muted" style="height: 400px; background: #f9f9f9;">
+                            No Image Available
                         </div>
-                    {% else %}
-                        <div class="main-image d-flex align-items-center justify-content-center text-muted">No Image Available</div>
                     {% endif %}
                 </div>
             </div>
@@ -530,59 +575,108 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        // Store all image URLs in a JavaScript array
-        const imageUrls = [
+        // ✨✨✨ Updated: Mixed Media List (Images + Video) ✨✨✨
+        const mediaList = [
+            // 1. Add Images
             {% for img in product.images.all %}
-                "{{ img.image.url }}",
+                {
+                    type: 'image',
+                    url: "{{ img.image.url }}"
+                },
             {% endfor %}
+
+            // 2. Add Video if exists
+            {% if product.video %}
+                {
+                    type: 'video',
+                    url: "{{ product.video.url }}"
+                },
+            {% endif %}
         ];
 
         let currentIndex = 0;
 
+        // Initialize Display
+        document.addEventListener('DOMContentLoaded', function() {
+            if (mediaList.length > 0) {
+                updateDisplay();
+            }
+        });
+
         function updateDisplay() {
-            // Update Main Image
+            const currentItem = mediaList[currentIndex];
             const mainImg = document.getElementById('mainImage');
-            if(mainImg && imageUrls.length > 0) {
-                mainImg.src = imageUrls[currentIndex];
+            const mainVideo = document.getElementById('mainVideo');
+            const mainVideoSrc = document.getElementById('mainVideoSource');
+
+            // 1. Control Main Display
+            if (currentItem.type === 'image') {
+                // Show Image, Hide & Pause Video
+                mainVideo.pause();
+                mainVideo.style.display = 'none';
+                
+                mainImg.src = currentItem.url;
+                mainImg.style.display = 'block';
+            } else if (currentItem.type === 'video') {
+                // Hide Image, Show Video
+                mainImg.style.display = 'none';
+                
+                // Only reload if source changes to prevent flickering
+                if(mainVideoSrc.getAttribute('src') !== currentItem.url) {
+                    mainVideoSrc.src = currentItem.url;
+                    mainVideo.load();
+                }
+                mainVideo.style.display = 'block';
             }
 
-            // Update Thumbnails Active State
-            const thumbnails = document.querySelectorAll('.thumbnail');
-            thumbnails.forEach((thumb, index) => {
-                if (index === currentIndex) {
-                    thumb.classList.add('active');
-                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                } else {
-                    thumb.classList.remove('active');
-                }
-            });
+            // 2. Update Thumbnails Active State
+            // We use id="thumb-index" to find the img inside the wrapper
+            const allThumbs = document.querySelectorAll('.thumbnail');
+            allThumbs.forEach(thumb => thumb.classList.remove('active'));
+
+            const activeThumb = document.getElementById('thumb-' + currentIndex);
+            if (activeThumb) {
+                activeThumb.classList.add('active');
+                // Optional: Scroll thumbnail into view
+                activeThumb.parentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
         }
 
-        function prevImage() {
-            if (imageUrls.length <= 1) return;
-            currentIndex = (currentIndex === 0) ? imageUrls.length - 1 : currentIndex - 1;
+        function prevMedia() {
+            if (mediaList.length <= 1) return;
+            currentIndex = (currentIndex === 0) ? mediaList.length - 1 : currentIndex - 1;
             updateDisplay();
         }
 
-        function nextImage() {
-            if (imageUrls.length <= 1) return;
-            currentIndex = (currentIndex === imageUrls.length - 1) ? 0 : currentIndex + 1;
+        function nextMedia() {
+            if (mediaList.length <= 1) return;
+            currentIndex = (currentIndex === mediaList.length - 1) ? 0 : currentIndex + 1;
             updateDisplay();
         }
 
-        function selectImage(index) {
+        function selectMedia(index) {
             currentIndex = index;
             updateDisplay();
         }
 
-        // ✨ Flying Animation & Add to Cart Logic ✨
+        // ✨ Flying Animation & Add to Cart Logic (Updated for Video) ✨
         function addToBag(productId) {
             const btn = document.getElementById('addToBagBtn');
             const bagIcon = document.getElementById('navBagIcon');
-            const mainImg = document.getElementById('mainImage');
+            
+            // Animation Source: Default to mainImage
+            let sourceEl = document.getElementById('mainImage');
+            
+            // If mainImage is hidden (watching video), use the first thumbnail
+            if (sourceEl.style.display === 'none') {
+                const firstThumb = document.querySelector('.thumbnail');
+                if (firstThumb) sourceEl = firstThumb;
+            }
 
-            if (!bagIcon || !mainImg) return;
+            if (!bagIcon || !sourceEl) return;
 
             // 1. Send AJAX Request
             fetch("{% url 'add_to_cart' %}", {
@@ -597,7 +691,10 @@
             .then(data => {
                 if(data.status === 'success') {
                     // 2. Perform Flying Animation
-                    animateFly(mainImg, bagIcon);
+                    animateFly(sourceEl, bagIcon);
+                } else if (data.status === 'error') {
+                    // Safety alert for errors (e.g., Vendor trying to buy)
+                    alert(data.message);
                 }
             })
             .catch(error => console.error('Error:', error));

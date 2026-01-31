@@ -42,6 +42,7 @@ urlpatterns = [
     path("vendor/orders/", views.vendor_orders, name="vendor_orders"),
 
     path('heartbeat/', views.heartbeat, name='heartbeat'),
+    path('vendor/product/<int:product_id>/delete-video/', views.delete_product_video, name='delete_product_video'),
 ]
 
 # Serve media files in development

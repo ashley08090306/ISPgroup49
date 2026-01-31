@@ -517,6 +517,24 @@ def delete_product_image(request, image_id):
     image.delete()
     return redirect('vendor_edit_product', product_id=product_id)
 
+@login_required
+def delete_product_video(request, product_id):
+    # 1. 权限检查
+    if getattr(request.user, 'role', '') != 'vendor':
+        return redirect('home')
+
+    # 2. 获取商品
+    product = get_object_or_404(Product, id=product_id)
+
+    # 3. 如果有视频，删除它
+    if product.video:
+        product.video.delete() # 删除物理文件
+        product.video = None   # 清空数据库字段
+        product.save()
+
+    # 4. 刷新编辑页面
+    return redirect('vendor_edit_product', product_id=product.id)
+
 def heartbeat(request):
     """
     心跳接口：仅用于保持 Session 活跃

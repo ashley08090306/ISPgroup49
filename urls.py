@@ -12,9 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.conf.urls.static import static, serve
 from core import views
 
 urlpatterns = [
@@ -45,6 +45,14 @@ urlpatterns = [
     path('vendor/product/<int:product_id>/delete-video/', views.delete_product_video, name='delete_product_video'),
 ]
 
-# Serve media files in development
+
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    # 当 DEBUG = False 时，手动处理 static 和 media
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+        ]

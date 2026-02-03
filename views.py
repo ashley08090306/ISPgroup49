@@ -10,6 +10,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
 import json
+from django.core.exceptions import PermissionDenied
 
 
 # ==================== 公共视图 ====================
@@ -178,8 +179,12 @@ def register(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
-        role = request.POST.get('role')
 
+        # ✨✨✨ 改动 1: 强制设定角色为 'customer' ✨✨✨
+        # 不再允许用户自己选择身份，注册进来的全是顾客
+        role = 'customer'
+
+        # 地址信息 (顾客必须填)
         country = request.POST.get('country')
         city = request.POST.get('city')
         district = request.POST.get('district')
@@ -189,9 +194,9 @@ def register(request):
         if password != confirm_password:
             return render(request, 'register.html', {'error': 'Passwords do not match! Please try again.'})
 
-        if role == 'customer':
-            if not (country and city and street and detail):
-                return render(request, 'register.html', {'error': 'Customers should provide a complete address during registration!'})
+        # ✨✨✨ 改动 2: 既然全是 customer，直接检查地址 ✨✨✨
+        if not (country and city and street and detail):
+            return render(request, 'register.html', {'error': 'Please provide a complete address for shipping.'})
 
         if username and password and email:
             try:
@@ -207,24 +212,22 @@ def register(request):
                     error_msg = mark_safe(f'Email already registered. <a href="{login_url}" class="text-dark" style="text-decoration: underline;"><strong>Log in now</strong></a>')
                     return render(request, 'register.html', {'error': error_msg})
 
-                # 创建用户
+                # 创建用户 (默认为 Customer)
                 user = User.objects.create_user(username=username, email=email, password=password, role=role)
 
+                # 创建地址记录
                 if country:
                     ShippingAddress.objects.create(
                         user=user, country=country, city=city,
                         district=district, street=street, detail_address=detail
                     )
 
-                # 必须手动指定后端
+                # 指定后端并登录
                 user.backend = 'core.authentication.EmailOrUsernameBackend'
-
                 login(request, user)
 
-                if role == 'vendor':
-                    return redirect('vendor_dashboard')
-                else:
-                    return redirect('home')
+                # ✨✨✨ 改动 3: 注册成功后统一去首页 (因为不会有 Vendor 注册了) ✨✨✨
+                return redirect('home')
 
             except Exception as e:
                 print(f"Registration Error: {e}")
@@ -282,7 +285,7 @@ def logout_view(request):
 @login_required
 def vendor_dashboard(request):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     total_sales_data = Order.objects.aggregate(total=Sum(F('product__price') * F('quantity')))
     total_sales = total_sales_data['total']
@@ -300,7 +303,7 @@ def vendor_dashboard(request):
 @login_required
 def vendor_myshop(request):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     shop, created = ShopProfile.objects.get_or_create(id=1)
 
@@ -323,7 +326,7 @@ def vendor_myshop(request):
 @login_required
 def vendor_products(request):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     products = Product.objects.all().order_by('-id')
     search_query = request.GET.get('q')
@@ -343,7 +346,7 @@ def vendor_products(request):
 @login_required
 def vendor_add_product(request):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     if request.method == 'POST':
         product_name = request.POST.get('product_name')
@@ -412,7 +415,7 @@ def vendor_add_product(request):
 @login_required
 def toggle_product_availability(request, product_id):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     product = get_object_or_404(Product, id=product_id)
 
@@ -427,7 +430,7 @@ def toggle_product_availability(request, product_id):
 @login_required
 def vendor_orders(request):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     orders = Order.objects.all().order_by('-order_date')
 
@@ -437,7 +440,7 @@ def vendor_orders(request):
 @login_required
 def vendor_delete_product(request, product_id):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     product = get_object_or_404(Product, id=product_id)
     product.delete()
@@ -446,7 +449,7 @@ def vendor_delete_product(request, product_id):
 @login_required
 def vendor_edit_product(request, product_id):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     product = get_object_or_404(Product, id=product_id)
 
@@ -510,7 +513,7 @@ def vendor_edit_product(request, product_id):
 @login_required
 def delete_product_image(request, image_id):
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     image = get_object_or_404(ProductImage, id=image_id)
     product_id = image.product.id
@@ -521,7 +524,7 @@ def delete_product_image(request, image_id):
 def delete_product_video(request, product_id):
     # 1. 权限检查
     if getattr(request.user, 'role', '') != 'vendor':
-        return redirect('home')
+        raise PermissionDenied
 
     # 2. 获取商品
     product = get_object_or_404(Product, id=product_id)

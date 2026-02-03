@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,6 +21,64 @@
         .btn-logout:hover { color: #ff4c4c; transform: translateX(3px); }
         .form-label { font-weight: 600; font-size: 0.9rem; color: #444; }
         .img-thumbnail { width: 100px; height: 100px; object-fit: cover; }
+
+        /* Upload Styles */
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            background-color: #fff;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #000;
+            background-color: #f8f9fa;
+        }
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .btn-remove-preview {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+        .btn-remove-preview:hover {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -118,41 +177,62 @@
 
                         <hr class="my-4">
 
-                        <h5 class="mb-3">Product Images</h5>
-                        <div class="row g-3 mb-3">
+                        <h5 class="mb-3">Existing Images</h5>
+                        <div class="row g-3 mb-4">
                             {% for img in product.images.all %}
                             <div class="col-auto text-center position-relative">
                                 <img src="{{ img.image.url }}" class="img-thumbnail rounded">
                                 <a href="{% url 'delete_product_image' img.id %}" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" style="width: 24px; height: 24px; padding: 0; line-height: 22px;">&times;</a>
                             </div>
+                            {% empty %}
+                                <div class="text-muted small">No images uploaded yet.</div>
                             {% endfor %}
                         </div>
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label class="form-label">Add New Images</label>
-                            <input type="file" name="new_images" class="form-control" multiple accept="image/*">
+                            <div class="form-text mb-2">Click below to upload more images.</div>
+                            <input type="file" name="new_images" id="newImagesInput" class="d-none" multiple accept="image/*">
+                            <div class="upload-area" onclick="document.getElementById('newImagesInput').click()">
+                                <i class="bi bi-images fs-2 text-secondary"></i>
+                                <p class="mb-0 mt-2 text-dark fw-bold">Click to Add Images</p>
+                                <small class="text-muted">(Supports JPG, PNG, WEBP)</small>
+                            </div>
+                            <div class="preview-container" id="newImagesPreviewContainer"></div>
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Product Video (Optional)</label>
                             
                             {% if product.video %}
-                                <div class="alert alert-secondary d-flex justify-content-between align-items-center p-2 mb-2">
-                                    <div class="d-flex align-items-center" style="overflow: hidden;">
-                                        <i class="bi bi-camera-video-fill me-2"></i>
-                                        <span class="text-truncate" style="max-width: 300px;">
-                                            Currently: <a href="{{ product.video.url }}" target="_blank" class="text-decoration-underline text-dark">{{ product.video.name }}</a>
-                                        </span>
+                                <div class="alert alert-secondary p-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong>Current Video:</strong>
+                                        <a href="{% url 'delete_product_video' product.id %}" class="btn btn-danger btn-sm text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;" onclick="return confirm('Delete this video?');">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </a>
                                     </div>
-                                    <a href="{% url 'delete_product_video' product.id %}" class="btn btn-danger btn-sm text-uppercase ms-2" style="font-size: 0.7rem; letter-spacing: 1px; white-space: nowrap;" onclick="return confirm('Are you sure you want to delete this video? This cannot be undone.');">
-                                        <i class="bi bi-trash"></i> Delete Video
-                                    </a>
+                                    <div class="bg-black text-center p-2 rounded">
+                                        <video controls style="width: 100%; max-height: 300px;">
+                                            <source src="{{ product.video.url }}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                    <div class="form-text mt-2">To replace this, simply upload a new video below.</div>
                                 </div>
-                                <div class="form-text mb-2">Upload a new video below to replace the existing one.</div>
-                            {% else %}
-                                <div class="form-text mb-2">Supported formats: MP4, WebM.</div>
                             {% endif %}
 
-                            <input type="file" name="video" class="form-control" accept="video/*">
+                            <label class="form-label small text-muted">Upload New Video</label>
+                            <input type="file" name="video" id="videoInput" class="form-control" accept="video/*">
+                            
+                            <div id="videoPreviewBox" class="mt-3 bg-black text-center p-2 rounded d-none" style="max-width: 400px;">
+                                <video id="videoPlayer" controls style="width: 100%; max-height: 250px;">
+                                    Your browser does not support video.
+                                </video>
+                                <button type="button" class="btn btn-sm btn-danger mt-2" onclick="clearVideo()">
+                                    <i class="bi bi-trash"></i> Remove New Video
+                                </button>
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -166,42 +246,103 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. 获取元素
+            // === 1. Stock / Availability Logic ===
             const stockInput = document.getElementById('stockInput');
             const availCheck = document.getElementById('availCheck');
             const availLabel = document.getElementById('availLabel');
 
-            // 2. 定义库存联动函数
             function updateAvailability() {
                 const stock = parseInt(stockInput.value) || 0;
-
                 if (stock <= 0) {
-                    // 如果库存 <= 0：
-                    // 1. 强制取消勾选
-                    // 2. 禁用复选框 (变灰)，防止用户强行勾选
                     availCheck.checked = false;
                     availCheck.disabled = true;
                     availLabel.innerHTML = "Out of Stock (Auto-hidden)";
                     availLabel.classList.add('text-muted');
                 } else {
-                    // 如果库存 > 0：
                     if (availCheck.disabled) {
-                        // 只有当它之前是被禁用(Locked)的状态时，我们才自动帮用户勾选
-                        // 这意味着用户刚刚补货了！
                         availCheck.disabled = false;
-                        availCheck.checked = true; // ✨ 自动 Active！
+                        availCheck.checked = true;
                         availLabel.innerHTML = "Available for sale";
                         availLabel.classList.remove('text-muted');
                     }
-                    // 如果之前没被禁用（说明之前也是有货的），保持用户现在的勾选状态，不要乱动。
+                }
+            }
+            updateAvailability();
+            stockInput.addEventListener('input', updateAvailability);
+
+            // === 2. New Images Upload Logic (FileReader) ===
+            const newImagesInput = document.getElementById('newImagesInput');
+            const previewContainer = document.getElementById('newImagesPreviewContainer');
+            const dt = new DataTransfer();
+
+            newImagesInput.addEventListener('change', function(e) {
+                for (let i = 0; i < this.files.length; i++) {
+                    const file = this.files[i];
+                    dt.items.add(file);
+                }
+                this.files = dt.files;
+                renderPreviews();
+            });
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                for (let i = 0; i < dt.files.length; i++) {
+                    const file = dt.files[i];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'preview-item';
+                        div.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview">
+                            <button type="button" class="btn-remove-preview" onclick="removeNewImage(${i})">&times;</button>
+                        `;
+                        previewContainer.appendChild(div);
+                    }
+                    reader.readAsDataURL(file);
                 }
             }
 
-            // 3. 页面加载时运行一次 (处理回显状态)
-            updateAvailability();
+            window.removeNewImage = function(index) {
+                const newDt = new DataTransfer();
+                for (let i = 0; i < dt.files.length; i++) {
+                    if (i !== index) newDt.items.add(dt.files[i]);
+                }
+                dt.items.clear();
+                for (let i = 0; i < newDt.files.length; i++) {
+                    dt.items.add(newDt.files[i]);
+                }
+                newImagesInput.files = dt.files;
+                renderPreviews();
+            };
 
-            // 4. 监听输入框变化 (实现实时联动)
-            stockInput.addEventListener('input', updateAvailability);
+            // === 3. Video Preview Logic ===
+            const videoInput = document.getElementById('videoInput');
+            const videoPreviewBox = document.getElementById('videoPreviewBox');
+            const videoPlayer = document.getElementById('videoPlayer');
+
+            videoInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    try {
+                        const fileURL = URL.createObjectURL(file);
+                        videoPlayer.src = fileURL;
+                        videoPlayer.load(); // Reload
+                        videoPreviewBox.classList.remove('d-none');
+                    } catch (e) {
+                        console.error("Video preview error", e);
+                    }
+                } else {
+                    clearVideo();
+                }
+            });
+
+            window.clearVideo = function() {
+                videoInput.value = ''; 
+                videoPlayer.pause();
+                videoPlayer.removeAttribute('src'); 
+                videoPlayer.load();
+                videoPreviewBox.classList.add('d-none');
+            }
         });
     </script>
 {% include 'heartbeat.html' %}

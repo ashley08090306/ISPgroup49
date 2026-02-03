@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-2v0cd+9og++k$=#@8)wyc+2o7-n!*lad0jyyqz+lpy$(g!mam_"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -153,3 +153,4 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 # 3. 确保关闭浏览器也清理 (双重保险)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register | My Shop</title>
-    <!-- Use Tailwind CSS for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -61,33 +60,34 @@
                 </div>
             </div>
 
-            <div class="mb-6">
-                 <label class="block text-gray-700 mb-2 font-medium">I am a:</label>
-                 <select name="role" id="roleSelect" onchange="toggleAddress()"
-                    class="w-full border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-purple-900 bg-white/50 focus:bg-white">
-                    <option value="customer">Customer (Buyer)</option>
-                    <option value="vendor">Vendor (Seller)</option>
-                  </select>
-            </div>
-
-            <!-- Address Section -->
             <div id="addressSection">
                 <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mt-8 mb-4 border-b border-gray-200 pb-2 flex justify-between">
                     <span>Shipping Address</span>
-                    <span class="text-blue-600 text-[10px] bg-blue-100 px-2 rounded-full py-0.5">Required for Customers</span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div><label class="block text-sm mb-1">Country</label><input type="text" name="country" class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white"></div>
-                    <div><label class="block text-sm mb-1">City</label><input type="text" name="city" class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white"></div>
+                    <div>
+                        <label class="block text-sm mb-1">Country</label>
+                        <input type="text" name="country" required class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">City</label>
+                        <input type="text" name="city" required class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div><label class="block text-sm mb-1">District</label><input type="text" name="district" class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white"></div>
-                    <div><label class="block text-sm mb-1">Street</label><input type="text" name="street" class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white"></div>
+                    <div>
+                        <label class="block text-sm mb-1">District</label>
+                        <input type="text" name="district" required class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1">Street</label>
+                        <input type="text" name="street" required class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
+                    </div>
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm mb-1">Detail Address</label>
-                    <input type="text" name="detail_address" class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
+                    <input type="text" name="detail_address" required class="w-full border border-gray-300 rounded px-3 py-2 bg-white/50 focus:bg-white">
                 </div>
             </div>
 
@@ -102,22 +102,5 @@
         </p>
     </div>
 
-    <script>
-        function toggleAddress() {
-            const role = document.getElementById('roleSelect').value;
-            const addressSection = document.getElementById('addressSection');
-            const inputs = addressSection.querySelectorAll('input');
-
-            if (role === 'vendor') {
-                addressSection.style.display = 'none';
-                inputs.forEach(input => input.required = false);
-            } else {
-                addressSection.style.display = 'block';
-                inputs.forEach(input => input.required = true);
-            }
-        }
-        // Run on load
-        toggleAddress();
-    </script>
 </body>
 </html>

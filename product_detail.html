@@ -403,7 +403,7 @@
 
                     <h1 class="product-title">{{ product.product_name }}</h1>
                     <div class="product-price">USD {{ product.price }}</div>
-                    <div class="product-description">{{ product.description|linebreaks }}</div>
+                    <div class="product-description">{{ product.description|safe }}</div>
 
                     {% if product.stock > 0 and product.available %}
                         <div class="d-grid">

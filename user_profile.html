@@ -1,0 +1,847 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account | RAFAYEL & GRACE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        const savedSize = localStorage.getItem('userFontSize');
+        if (savedSize) {
+            document.documentElement.style.fontSize = savedSize;
+        }
+    </script>
+
+    <style>
+        :root {
+            --chanel-black: #000000;
+            --chanel-white: #ffffff;
+            --chanel-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            color: var(--chanel-black);
+            background-color: var(--chanel-white);
+            overflow-x: hidden;
+        }
+
+        /* === Navbar (Strict Match to Home) === */
+        .navbar-top-row {
+            padding: 0 30px;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand-centered {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 10px;
+        }
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            letter-spacing: 0.2em;
+            color: var(--chanel-black);
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+        .icon-btn {
+            background: none; border: none; padding: 0 10px;
+            font-size: 1.2rem; color: var(--chanel-black); cursor: pointer; text-decoration: none;
+        }
+        .lang-btn {
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+            background: none; border: none; padding: 0; color: black; cursor: pointer; text-decoration: none;
+        }
+        .lang-dropdown-menu {
+            border: none; border-radius: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 10px 0; min-width: 120px;
+        }
+        .lang-item {
+            font-size: 0.8rem; padding: 8px 20px; text-transform: uppercase; letter-spacing: 0.1em; color: #333;
+        }
+        .goog-te-banner-frame, .goog-te-gadget, #google_translate_element, .skiptranslate { display: none !important; }
+        body>.skiptranslate { display: none !important; }
+
+        /* === Search Overlay === */
+        .search-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background-color: white; z-index: 2000; display: none;
+            flex-direction: column; padding: 40px; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .search-overlay.active { display: flex; opacity: 1; }
+        .search-header { text-align: center; position: relative; margin-bottom: 60px; }
+        .search-title { font-family: 'Inter', sans-serif; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.2em; color: #555; }
+        .btn-close-search { position: absolute; right: 0; top: 0; font-size: 1.5rem; cursor: pointer; background: none; border: none; }
+        .search-input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; border-bottom: 1px solid #000; position: relative; display: flex; align-items: center; }
+        .search-input { width: 100%; border: none; font-size: 1.5rem; font-family: 'Playfair Display', serif; padding: 15px 0; outline: none; text-transform: uppercase; }
+
+        /* === Dashboard Layout === */
+        .dashboard-container {
+            display: flex;
+            min-height: 80vh;
+        }
+        .sidebar {
+            width: 280px;
+            background-color: #f9f9f9;
+            padding: 40px 20px;
+            border-right: 1px solid #eee;
+            flex-shrink: 0;
+        }
+        .main-content {
+            flex: 1;
+            padding: 40px 60px;
+        }
+
+        /* Sidebar Navigation */
+        .nav-item {
+            display: block;
+            padding: 15px 0;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.3s;
+            border-bottom: 1px solid transparent;
+        }
+        .nav-item:hover { color: #000; }
+        .nav-item.active {
+            color: #000;
+            font-weight: 700;
+            border-bottom: 1px solid #000;
+        }
+        .nav-item i { margin-right: 10px; font-size: 1.1rem; }
+
+        /* Content Sections */
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 15px;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: #555; margin-bottom: 8px; font-weight: 600;
+        }
+        .form-control {
+            border-radius: 0; border: 1px solid #ccc; padding: 12px 15px; font-size: 0.9rem;
+        }
+        .form-control:focus { border-color: #000; box-shadow: none; }
+
+        .btn-action {
+            background-color: #000; color: #fff; border: none; padding: 12px 30px;
+            text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem;
+            transition: background 0.3s;
+        }
+        .btn-action:hover { background-color: #333; }
+        .btn-outline-action {
+            background: transparent; color: #000; border: 1px solid #000; padding: 10px 20px;
+            text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; text-decoration: none;
+        }
+        .btn-outline-action:hover { background: #000; color: #fff; }
+
+        /* Address Card */
+        .address-card {
+            border: 1px solid #eee; padding: 20px; margin-bottom: 20px; position: relative;
+        }
+        .badge-category {
+            position: absolute; top: 20px; right: 20px;
+            background: #f0f0f0; color: #333; font-size: 0.7rem; padding: 4px 8px; text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* Order Table & Filter */
+        .table-custom th {
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; border-bottom: 2px solid #000; padding: 15px;
+        }
+        .table-custom td { padding: 15px; vertical-align: middle; border-bottom: 1px solid #eee; }
+
+        .filter-toggle-btn {
+            background: none; border: 1px solid #ccc; padding: 8px 20px;
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em;
+            border-radius: 0; color: #333; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .filter-toggle-btn:hover { background: #000; color: white; border-color: #000; }
+
+        .filter-panel { background: #f9f9f9; padding: 20px; margin-bottom: 30px; border: 1px solid #eee; }
+
+        /* Pagination & Jump - Styled to match Vendor Dashboard */
+        .custom-page-link {
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px !important; border: 1px solid #dee2e6;
+            color: #333; background-color: #fff; font-weight: 600; text-decoration: none; margin: 0 3px;
+        }
+        .custom-page-link:hover { background-color: #f0f0f0; color: #000; }
+        .page-item.active .custom-page-link { background-color: #000; border-color: #000; color: #fff; }
+        .page-item.disabled .custom-page-link { color: #ccc; pointer-events: none; border-color: #eee; }
+
+        .jump-wrapper {
+            background-color: #fff; border: 1px solid #dee2e6; padding: 6px 15px; border-radius: 4px;
+            display: flex; align-items: center; font-size: 0.9rem;
+        }
+        .jump-input {
+            border: none; border-bottom: 2px solid #eee; width: 40px; text-align: center; font-weight: bold; outline: none; margin-right: 8px;
+        }
+        .jump-input:focus { border-bottom-color: #000; }
+        .btn-jump {
+            background-color: #000; color: #fff; border: none; padding: 5px 15px; border-radius: 4px; font-size: 0.8rem; margin-left: 10px; transition: opacity 0.2s;
+        }
+        .btn-jump:hover { opacity: 0.8; }
+
+        /* Reviews */
+        .review-item { border-bottom: 1px solid #eee; padding: 20px 0; }
+        .review-product-link { font-weight: 700; color: #000; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Cart */
+        .cart-item-row { display: flex; align-items: center; gap: 20px; }
+        .cart-img { width: 60px; height: 60px; object-fit: cover; background: #f9f9f9; }
+
+        .qty-control { display: flex; align-items: center; border: 1px solid #ddd; width: fit-content; }
+        .qty-btn { background: none; border: none; padding: 2px 8px; cursor: pointer; }
+        .qty-display { padding: 0 8px; font-size: 0.85rem; }
+
+        @media (max-width: 768px) {
+            .dashboard-container { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #eee; padding: 20px; display: flex; overflow-x: auto; gap: 20px; }
+            .nav-item { padding: 10px 0; white-space: nowrap; border-bottom: none; }
+            .nav-item.active { border-bottom: 2px solid #000; }
+            .main-content { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="searchOverlay" class="search-overlay">
+        <div class="search-header">
+            <h2 class="search-title">SEARCH</h2>
+            <button class="btn-close-search" onclick="toggleSearch()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <form action="{% url 'home' %}" method="GET" class="w-100">
+            <div class="search-input-wrapper">
+                <input type="text" name="q" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off">
+            </div>
+            <div class="text-center mt-4">
+                 <button type="submit" class="btn btn-dark rounded-0 px-5 py-2 text-uppercase" style="letter-spacing: 2px;">View Results</button>
+            </div>
+        </form>
+    </div>
+
+    <header>
+        <div class="navbar-top-row">
+            <div id="google_translate_element"></div>
+            <div class="d-none d-md-flex gap-4">
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">LANGUAGE</button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">TEXT SIZE</button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')">Standard</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')">Large</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="d-flex gap-4">
+                <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
+                <a href="{% url 'logout' %}" class="icon-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+                <a href="{% url 'cart_view' %}" class="icon-btn"><i class="bi bi-bag"></i></a>
+            </div>
+        </div>
+        <div class="navbar-brand-centered">
+            <a href="{% url 'home' %}" class="brand-logo">RAFAYEL & GRACE</a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="mb-4 d-none d-md-block">
+                <div class="small text-uppercase text-muted mb-1">Welcome</div>
+                <div class="fw-bold" style="font-size: 1.2rem;">{{ user.username }}</div>
+            </div>
+
+            <nav>
+                <a href="{% url 'home' %}" class="nav-item"><i class="bi bi-house"></i> Home</a>
+                <a href="?tab=profile" class="nav-item {% if active_tab == 'profile' %}active{% endif %}"><i class="bi bi-person"></i> My Profile</a>
+                <a href="?tab=address" class="nav-item {% if active_tab == 'address' %}active{% endif %}"><i class="bi bi-geo-alt"></i> My Address</a>
+                <a href="?tab=orders" class="nav-item {% if active_tab == 'orders' %}active{% endif %}"><i class="bi bi-box-seam"></i> My Orders</a>
+                <a href="?tab=bag" class="nav-item {% if active_tab == 'bag' %}active{% endif %}"><i class="bi bi-bag"></i> My Shopping Bag</a>
+                <a href="?tab=reviews" class="nav-item {% if active_tab == 'reviews' %}active{% endif %}"><i class="bi bi-star"></i> My Reviews</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-dark rounded-0 mb-4">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- 1. My Profile -->
+            {% if active_tab == 'profile' %}
+                <h2 class="section-title">My Profile</h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-4 font-serif">Personal Information</h5>
+                        <form method="POST" action="{% url 'update_profile_info' %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-6 form-group">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                                </div>
+                                <div class="col-6 form-group">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Birthday</label>
+                                <input type="date" name="birth_date" class="form-control" value="{{ user.birth_date|date:'Y-m-d' }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gender</label>
+                                <select name="gender" class="form-control">
+                                    <option value="M" {% if user.gender == 'M' %}selected{% endif %}>Male</option>
+                                    <option value="F" {% if user.gender == 'F' %}selected{% endif %}>Female</option>
+                                    <option value="O" {% if user.gender == 'O' %}selected{% endif %}>Other</option>
+                                    <option value="N" {% if user.gender == 'N' %}selected{% endif %}>Prefer not to say</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-action">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <div class="col-md-5 offset-md-1 mt-5 mt-md-0">
+                        <h5 class="mb-4 font-serif">Change Password</h5>
+                        <form method="POST" action="{% url 'change_password' %}">
+                            {% csrf_token %}
+                            {% for field in password_form %}
+                            <div class="form-group">
+                                <label class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            <button type="submit" class="btn-action">Update Password</button>
+                        </form>
+                        <style>#id_old_password, #id_new_password1, #id_new_password2 { width: 100%; padding: 12px; border: 1px solid #ccc; font-size: 0.9rem; }</style>
+                    </div>
+                </div>
+
+            <!-- 2. My Address -->
+            {% elif active_tab == 'address' %}
+                <h2 class="section-title">My Addresses</h2>
+
+                <div class="mb-5">
+                    <button class="btn-action" type="button" data-bs-toggle="collapse" data-bs-target="#addAddressForm">
+                        <i class="bi bi-plus-lg me-2"></i> Add New Address
+                    </button>
+                </div>
+
+                <div class="collapse mb-5 bg-light p-4 border" id="addAddressForm">
+                    <h5 class="mb-3">New Address Details</h5>
+                    <form method="POST" action="{% url 'add_address' %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Category</label>
+                                <select name="category" class="form-control">
+                                    <option value="home">Home (Max 1)</option>
+                                    <option value="office">Office (Max 1)</option>
+                                    <option value="school">School (Max 1)</option>
+                                    <option value="other">Other (Unlimited)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">Country</label>
+                                <input type="text" name="country" class="form-control" required>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label class="form-label">City</label>
+                                <input type="text" name="city" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">District</label>
+                                <input type="text" name="district" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">Street</label>
+                                <input type="text" name="street" class="form-control" required>
+                            </div>
+                            <div class="col-12 form-group">
+                                <label class="form-label">Detail Address</label>
+                                <input type="text" name="detail_address" class="form-control" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-action">Save Address</button>
+                    </form>
+                </div>
+
+                <div class="row">
+                    {% for addr in addresses %}
+                    <div class="col-md-6">
+                        <div class="address-card">
+                            <div class="badge-category">{{ addr.get_category_display }}</div>
+                            <div class="fw-bold mb-2">{{ user.first_name }} {{ user.last_name }}</div>
+                            <div class="text-muted small mb-3">
+                                {{ addr.detail_address }}<br>
+                                {{ addr.street }}, {{ addr.district }}<br>
+                                {{ addr.city }}, {{ addr.country }}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'delete_address' addr.id %}" class="btn-outline-action text-danger border-danger" onclick="return confirm('Delete this address?')">Delete</a>
+                                <button class="btn-outline-action" type="button" data-bs-toggle="modal" data-bs-target="#editAddr{{addr.id}}">Edit</button>
+                            </div>
+                        </div>
+
+                        <!-- Edit Modal -->
+                        <div class="modal fade" id="editAddr{{addr.id}}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content rounded-0">
+                                    <div class="modal-header border-0">
+                                        <h5 class="modal-title font-serif">Edit Address</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="POST" action="{% url 'update_address' addr.id %}">
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                <label class="form-label">Category</label>
+                                                <select name="category" class="form-control">
+                                                    <option value="home" {% if addr.category == 'home' %}selected{% endif %}>Home</option>
+                                                    <option value="office" {% if addr.category == 'office' %}selected{% endif %}>Office</option>
+                                                    <option value="school" {% if addr.category == 'school' %}selected{% endif %}>School</option>
+                                                    <option value="other" {% if addr.category == 'other' %}selected{% endif %}>Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group"><label class="form-label">Country</label><input type="text" name="country" class="form-control" value="{{addr.country}}"></div>
+                                            <div class="form-group"><label class="form-label">City</label><input type="text" name="city" class="form-control" value="{{addr.city}}"></div>
+                                            <div class="form-group"><label class="form-label">District</label><input type="text" name="district" class="form-control" value="{{addr.district}}"></div>
+                                            <div class="form-group"><label class="form-label">Street</label><input type="text" name="street" class="form-control" value="{{addr.street}}"></div>
+                                            <div class="form-group"><label class="form-label">Detail</label><input type="text" name="detail_address" class="form-control" value="{{addr.detail_address}}"></div>
+                                            <button type="submit" class="btn-action w-100">Update</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No addresses found.</p>
+                    {% endfor %}
+                </div>
+
+            <!-- 3. My Orders -->
+            {% elif active_tab == 'orders' %}
+
+                {% if order_detail %}
+                    <!-- Order Detail View -->
+                    <div class="mb-4">
+                        <a href="?tab=orders" class="text-decoration-none text-muted small text-uppercase"><i class="bi bi-arrow-left"></i> Back to Orders</a>
+                    </div>
+                    <h2 class="section-title">Order #{{ order_detail.id }}</h2>
+                    <div class="row">
+                        <div class="col-md-8">
+                             <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-end">Unit Price</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ order_detail.product.product_name }}</div>
+                                            <div class="text-muted small">{{ order_detail.product.brand }}</div>
+                                        </td>
+                                        <td class="text-center">{{ order_detail.quantity }}</td>
+                                        <td class="text-end">${{ order_detail.product.price }}</td>
+                                        <td class="text-end fw-bold">${{ order_detail.total_price }}</td>
+                                    </tr>
+                                </tbody>
+                             </table>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light p-4">
+                                <h6 class="text-uppercase mb-3">Order Info</h6>
+                                <p class="small mb-1"><strong>Date:</strong> {{ order_detail.order_date|date:"M d, Y" }}</p>
+                                <p class="small mb-1"><strong>Status:</strong> {{ order_detail.status }}</p>
+                                <hr>
+                                <h6 class="text-uppercase mb-3">Shipping Address</h6>
+                                {% if shipping_address %}
+                                <p class="small text-muted">
+                                    {{ shipping_address.detail_address }}<br>
+                                    {{ shipping_address.street }}, {{ shipping_address.district }}<br>
+                                    {{ shipping_address.city }}, {{ shipping_address.country }}
+                                </p>
+                                {% else %}
+                                <p class="small text-muted">Address not available.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- Order List View -->
+                    <h2 class="section-title mb-3">My Orders</h2>
+
+                    <!-- Filter Button -->
+                    <div class="mb-4">
+                        <button class="filter-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#orderFilters" aria-expanded="false">
+                            <i class="bi bi-funnel"></i> Filters
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Filter Panel -->
+                    <div class="collapse {% if current_status != 'all' or current_sort != 'newest' %}show{% endif %}" id="orderFilters">
+                        <div class="filter-panel">
+                            <form method="GET">
+                                <input type="hidden" name="tab" value="orders">
+                                <div class="row align-items-end g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted text-uppercase mb-1">Sort By Date</label>
+                                        <select name="sort" class="form-select form-select-sm border-0 bg-white shadow-sm">
+                                            <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                                            <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small text-muted text-uppercase mb-1">Status</label>
+                                        <select name="status" class="form-select form-select-sm border-0 bg-white shadow-sm">
+                                            <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Orders</option>
+                                            <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                                            <option value="shipped" {% if current_status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                            <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                            <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                            <option value="processed" {% if current_status == 'processed' %}selected{% endif %}>Processed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn-action py-2 flex-grow-1">Apply</button>
+                                            <a href="?tab=orders" class="btn-outline-action py-2 text-center">Clear</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <table class="table table-custom table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Total Amount</th>
+                                <th class="text-end">
+                                    <div class="d-flex justify-content-end align-items-baseline gap-2">
+                                        <span class="small text-muted fw-normal" style="font-size: 0.65rem; letter-spacing: 0;">{{ total_orders_count }} ORDERS</span>
+                                        <span>Status</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr style="cursor: pointer;" onclick="window.location.href='?tab=orders&order_id={{ order.id }}'">
+                                <td class="fw-bold text-decoration-underline">#{{ order.id }}</td>
+                                <td>{{ order.order_date|date:"Y-m-d" }}</td>
+                                <td>${{ order.total_price }}</td>
+                                <td class="text-end">
+                                    {% if order.status == 'Pending' %}
+                                        <span class="badge bg-warning text-dark border border-warning bg-opacity-25 text-uppercase px-3"
+                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                              onclick="event.stopPropagation(); confirmCancel({{ order.id }});"
+                                              title="Click to Cancel Order">
+                                              {{ order.status }}
+                                        </span>
+                                    {% elif order.status == 'Processed' %}
+                                        <span class="badge bg-success text-success border border-success bg-opacity-10 text-uppercase px-3"
+                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                              onclick="event.stopPropagation(); showStatusInfo('Processed');">
+                                              {{ order.status }}
+                                        </span>
+                                    {% elif order.status == 'Shipped' %}
+                                        <span class="badge bg-info text-info border border-info bg-opacity-10 text-uppercase px-3"
+                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                              onclick="event.stopPropagation(); showStatusInfo('Shipped');">
+                                              {{ order.status }}
+                                        </span>
+                                    {% elif order.status == 'Cancelled' %}
+                                        <span class="badge bg-danger text-danger border border-danger bg-opacity-10 text-uppercase px-3"
+                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                              onclick="event.stopPropagation(); showStatusInfo('Cancelled');">
+                                              {{ order.status }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border text-uppercase px-3" style="letter-spacing: 0.05em;">{{ order.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-5 text-muted">No orders found matching your criteria.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    {% if orders.has_other_pages %}
+                    <div class="d-flex flex-column align-items-center mt-5">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center m-0">
+                                {% if orders.has_previous %}
+                                    <li class="page-item">
+                                        <a class="custom-page-link" href="?tab=orders&page={{ orders.previous_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&laquo;</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="custom-page-link">&laquo;</span></li>
+                                {% endif %}
+
+                                {% for i in custom_page_range %}
+                                    {% if i == orders.paginator.ELLIPSIS %}
+                                        <li class="page-item disabled"><span class="custom-page-link bg-transparent border-0">...</span></li>
+                                    {% else %}
+                                        <li class="page-item {% if i == orders.number %}active{% endif %}">
+                                            <a class="custom-page-link" href="?tab=orders&page={{ i }}&sort={{ current_sort }}&status={{ current_status }}">{{ i }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if orders.has_next %}
+                                    <li class="page-item">
+                                        <a class="custom-page-link" href="?tab=orders&page={{ orders.next_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&raquo;</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="custom-page-link">&raquo;</span></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+
+                        <div class="jump-wrapper mt-3">
+                            <input type="number" id="jumpPageInput" value="{{ orders.number }}" min="1" max="{{ orders.paginator.num_pages }}" class="jump-input">
+                            <span class="text-muted small">/ {{ orders.paginator.num_pages }}</span>
+                            <button onclick="jumpToPage()" class="btn-jump">Go</button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ✨✨✨ Modal for Order Cancellation Confirmation ✨✨✨ -->
+                    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-0 border-0 shadow">
+                                <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title font-serif text-uppercase">Cancel Order</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body text-center py-4">
+                                    <p class="mb-0 text-muted">Are you sure you want to cancel this order?</p>
+                                    <p class="small text-danger mt-2">This action cannot be undone.</p>
+                                </div>
+                                <div class="modal-footer border-0 justify-content-center pb-4">
+                                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">No, Keep Order</button>
+                                    <a href="#" id="confirmCancelBtn" class="btn btn-danger px-4">Yes, Cancel Order</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✨✨✨ Modal for Status Info (Shipped/Cancelled/Processed) ✨✨✨ -->
+                    <div class="modal fade" id="statusInfoModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-0 border-0 shadow">
+                                <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title font-serif text-uppercase">Order Status</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body text-center py-4">
+                                    <p class="mb-0 text-muted" id="statusInfoText"></p>
+                                </div>
+                                <div class="modal-footer border-0 justify-content-center pb-4">
+                                    <button type="button" class="btn btn-dark px-5" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% endif %}
+
+            <!-- 4. My Shopping Bag -->
+            {% elif active_tab == 'bag' %}
+                <h2 class="section-title">My Shopping Bag</h2>
+                {% if cart_items %}
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>
+                                    <div class="cart-item-row">
+                                        {% if item.images.first %}
+                                            <img src="{{ item.images.first.image.url }}" class="cart-img">
+                                        {% else %}
+                                            <div class="cart-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                                        {% endif %}
+                                        <div>
+                                            <a href="{% url 'product_detail' item.id %}" class="text-dark fw-bold text-decoration-none text-uppercase" style="font-size: 0.9rem;">{{ item.product_name }}</a>
+                                            <div class="small text-muted">Ref: {{ item.id }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>USD {{ item.price }}</td>
+                                <td>
+                                    <!-- Simple quantity display for profile overview -->
+                                    <div class="qty-control">
+                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
+                                        <span class="qty-display">{{ item.quantity }}</span>
+                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'increase')">+</button>
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">USD {{ item.total_price }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="mt-4 text-end">
+                        <a href="{% url 'cart_view' %}" class="btn-action text-decoration-none">Go to Checkout</a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <p class="text-muted">Your bag is empty.</p>
+                        <a href="{% url 'home' %}" class="btn-outline-action">Start Shopping</a>
+                    </div>
+                {% endif %}
+
+            <!-- 5. My Reviews -->
+            {% elif active_tab == 'reviews' %}
+                <h2 class="section-title">My Reviews</h2>
+                <div class="review-list">
+                    {% for review in reviews %}
+                    <div class="review-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'product_detail' review.product.id %}" class="review-product-link">{{ review.product.product_name }}</a>
+                                <div class="text-warning small my-1">
+                                    {% for i in "x"|rjust:review.rating %}★{% endfor %}
+                                </div>
+                                <div class="text-muted small">{{ review.created_at|date:"M d, Y" }}</div>
+                            </div>
+                            <div>
+                                <a href="{% url 'delete_review' review.id %}" class="btn-outline-action text-danger border-danger" onclick="return confirm('Delete this review?')">Delete</a>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-secondary">{{ review.comment }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">You haven't written any reviews yet.</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white py-5 text-center mt-auto">
+        <div class="container">
+            <div class="text-uppercase small" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 1px;">
+                &copy; 2026 RAFAYEL & GRACE. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSearch() {
+            const overlay = document.getElementById('searchOverlay');
+            overlay.classList.toggle('active');
+            if (overlay.classList.contains('active')) {
+                setTimeout(() => overlay.querySelector('.search-input').focus(), 100);
+            }
+        }
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es', autoDisplay: false}, 'google_translate_element');
+        }
+        function setLanguage(lang) { document.cookie = "googtrans=/en/" + lang + "; path=/"; location.reload(); }
+        function setFontSize(size) { document.documentElement.style.fontSize = size; localStorage.setItem('userFontSize', size); }
+        const script = document.createElement('script');
+        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        document.body.appendChild(script);
+
+        // Cart Qty Logic
+        function updateQty(productId, action) {
+            fetch("{% url 'update_cart' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId, action: action })
+            })
+            .then(res => res.json())
+            .then(data => { if(data.status === 'success') location.reload(); });
+        }
+
+        // ✨ Page Jump Logic for Orders
+        function jumpToPage() {
+            const pageNum = document.getElementById('jumpPageInput').value;
+            if (pageNum) {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('page', pageNum);
+                // Ensure 'tab' is kept
+                if(!urlParams.has('tab')) urlParams.set('tab', 'orders');
+                window.location.search = urlParams.toString();
+            }
+        }
+
+        // ✨ Order Status Logic ✨
+        const cancelModal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+        const infoModal = new bootstrap.Modal(document.getElementById('statusInfoModal'));
+
+        function confirmCancel(orderId) {
+            // Set the href for the confirmation button
+            document.getElementById('confirmCancelBtn').href = "/order/cancel/" + orderId + "/";
+            cancelModal.show();
+        }
+
+        function showStatusInfo(status) {
+            let message = "";
+            if (status === 'Shipped') {
+                message = "Order has been shipped, cannot cancel order.";
+            } else if (status === 'Cancelled') {
+                message = "Order is already cancelled.";
+            } else if (status === 'Processed') {
+                message = "Order is already processed.";
+            }
+
+            document.getElementById('statusInfoText').innerText = message;
+            infoModal.show();
+        }
+    </script>
+</body>
+</html>

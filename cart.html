@@ -6,157 +6,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Bag | RAFAYEL & GRACE</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        const savedSize = localStorage.getItem('userFontSize');
+        if (savedSize) {
+            document.documentElement.style.fontSize = savedSize;
+        }
+    </script>
 
     <style>
         :root {
             --chanel-black: #000000;
             --chanel-white: #ffffff;
         }
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--chanel-black);
-            background-color: var(--chanel-white);
-            /* Prevent Google Translate from shifting body */
-            top: 0 !important;
-            position: static !important;
-        }
-        .page-header {
-            text-align: center;
-            padding: 60px 0 40px;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-        }
-        .font-serif { font-family: 'Playfair Display', serif; }
+        body { font-family: 'Inter', sans-serif; color: var(--chanel-black); top: 0 !important; position: static !important; }
 
-        /* Cart Table */
-        .cart-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .cart-table th {
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
-            border-bottom: 1px solid #000;
-            padding: 15px 0;
-            text-align: left;
-        }
-        .cart-table td {
-            padding: 20px 0;
-            vertical-align: middle;
-            border-bottom: 1px solid #eee;
-        }
+        /* Navbar (Simplified) */
+        .navbar-top-row { padding: 0 30px; height: 50px; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
 
-        /* Item Display */
-        .item-row { display: flex; align-items: center; gap: 20px; }
-        .item-img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            background-color: #f9f9f9;
-        }
-        .item-name {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 0.05em;
-            color: black;
-            text-decoration: none;
-        }
-        .item-ref { font-size: 0.75rem; color: #888; margin-top: 5px; }
-
-        /* Quantity Control */
-        .qty-control {
-            display: flex;
-            align-items: center;
-            border: 1px solid #ddd;
-            width: fit-content;
-        }
-        .qty-btn {
-            background: none;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        .qty-display {
-            padding: 0 10px;
-            font-size: 0.9rem;
-            min-width: 30px;
-            text-align: center;
-        }
-
-        /* Checkbox Custom */
-        .form-check-input {
-            cursor: pointer;
-            border-color: #000;
-            width: 1.2em;
-            height: 1.2em;
-        }
-        .form-check-input:checked {
-            background-color: #000;
-            border-color: #000;
-        }
-
-        /* Summary */
-        .summary-box {
-            background-color: #f9f9f9;
-            padding: 30px;
-            margin-top: 40px;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        .total-row {
-            font-weight: 700;
-            font-size: 1.1rem;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
-            margin-top: 15px;
-        }
-        .btn-checkout {
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            border: none;
-            font-weight: 600;
-            margin-top: 20px;
-            transition: opacity 0.3s;
-        }
-        .btn-checkout:hover { opacity: 0.8; }
-        .btn-checkout:disabled { background-color: #ccc; cursor: not-allowed; }
-
-        .btn-back {
-            text-decoration: none;
-            color: black;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        /* === Language Selector (Cart Page) === */
-        .cart-lang-wrapper {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-        }
+        /* Dropdown Styles from Home */
         .lang-btn {
             font-size: 0.75rem;
             font-weight: 600;
@@ -169,13 +40,15 @@
             cursor: pointer;
             text-decoration: none;
         }
+
         .lang-dropdown-menu {
             border: none;
             border-radius: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 10px 0;
             min-width: 120px;
         }
+
         .lang-item {
             font-size: 0.8rem;
             padding: 8px 20px;
@@ -183,29 +56,62 @@
             letter-spacing: 0.1em;
             color: #333;
             transition: background 0.2s;
+            text-decoration: none;
+            display: block;
         }
-        .lang-item:hover { background-color: #f5f5f5; }
 
-        /* Hide Google's Default Widget */
-        .goog-te-banner-frame { display: none !important; }
-        .goog-te-gadget { display: none !important; }
-        #google_translate_element { display: none !important; }
-        .skiptranslate { display: none !important; }
+        .lang-item:hover {
+            background-color: #f5f5f5;
+            color: #000;
+        }
+
+        /* Hide Google Translate Widget */
+        .goog-te-banner-frame, .goog-te-gadget, #google_translate_element, .skiptranslate { display: none !important; }
         body > .skiptranslate { display: none !important; }
+
+        /* Main Layout */
+        .page-title { font-family: 'Playfair Display', serif; font-size: 3rem; text-align: center; margin: 60px 0 80px; letter-spacing: 0.1em; }
+        .back-link { text-decoration: none; color: black; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 20px; display: inline-block; }
+
+        /* Cart Table */
+        .cart-header { border-bottom: 1px solid #000; padding-bottom: 15px; margin-bottom: 30px; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .cart-item { border-bottom: 1px solid #eee; padding-bottom: 30px; margin-bottom: 30px; }
+        .cart-img { width: 120px; height: 120px; object-fit: cover; background-color: #f9f9f9; }
+        .product-name { font-weight: 700; text-transform: uppercase; font-size: 0.9rem; margin-bottom: 5px; text-decoration: none; color: black; display: block; }
+        .product-ref { color: #666; font-size: 0.8rem; margin-bottom: 10px; }
+        .product-price { font-size: 0.95rem; margin-bottom: 5px; }
+
+        /* Quantity Control */
+        .qty-wrapper { border: 1px solid #ddd; display: inline-flex; align-items: center; margin-right: 20px; }
+        .qty-btn { background: none; border: none; padding: 5px 12px; cursor: pointer; font-size: 1rem; }
+        .qty-display { padding: 0 10px; font-size: 0.9rem; min-width: 30px; text-align: center; }
+
+        .remove-link { color: #666; text-decoration: underline; font-size: 0.85rem; cursor: pointer; }
+        .total-price { font-weight: 600; font-size: 1.1rem; text-align: right; }
+
+        /* Summary Box */
+        .summary-box { background-color: #f9f9f9; padding: 40px; }
+        .summary-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 30px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .summary-total { font-weight: 700; font-size: 1.2rem; border-top: 1px solid #ddd; padding-top: 20px; margin-top: 20px; }
+
+        .btn-checkout { background-color: #000; color: #fff; width: 100%; padding: 18px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; border: none; margin-top: 30px; display: block; text-align: center; text-decoration: none; transition: background 0.3s; }
+        .btn-checkout:hover { background-color: #333; color: white; }
+
+        /* Custom Checkbox */
+        .custom-checkbox { width: 18px; height: 18px; accent-color: black; cursor: pointer; }
     </style>
 </head>
-<body style="position: relative;">
+<body>
 
-    <!-- Hidden Google Widget -->
-    <div id="google_translate_element"></div>
+    <div class="navbar-top-row">
+        <div id="google_translate_element"></div>
 
-    <!-- Language Selector Top Right -->
-    <div class="cart-lang-wrapper">
         <div class="dropdown">
             <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 LANGUAGE
             </button>
-            <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+            <ul class="dropdown-menu lang-dropdown-menu">
                 <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
                 <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
                 <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
@@ -215,165 +121,120 @@
                 <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
             </ul>
         </div>
+
+        <div class="dropdown">
+            <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                TEXT SIZE
+            </button>
+            <ul class="dropdown-menu lang-dropdown-menu">
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')">Standard</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')">Large</a></li>
+                <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('130%')">Extra Large</a></li>
+            </ul>
+        </div>
     </div>
 
-    <div class="container py-5" style="max-width: 1000px;">
-        <a href="{% url 'home' %}" class="btn-back"><i class="bi bi-arrow-left me-2"></i> Continue Shopping</a>
+    <div class="container mb-5">
+        <a href="{% url 'home' %}" class="back-link"><i class="bi bi-arrow-left me-2"></i> Continue Shopping</a>
 
-        <div class="page-header">
-            <h1 class="font-serif">Shopping Bag</h1>
-        </div>
+        <h1 class="page-title">SHOPPING BAG</h1>
 
         {% if cart_items %}
         <div class="row">
-            <div class="col-md-8">
-                <table class="cart-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;"><input type="checkbox" class="form-check-input" id="selectAll" checked onchange="toggleAll(this)"></th>
-                            <th>Product</th>
-                            <th class="text-center">Quantity</th>
-                            <th class="text-end">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in cart_items %}
-                        <tr id="row-{{ item.id }}">
-                            <td>
-                                <!-- Item Checkbox -->
-                                <input type="checkbox" class="form-check-input item-check"
-                                       data-id="{{ item.id }}"
-                                       data-price="{{ item.price }}"
-                                       data-qty="{{ item.quantity }}"
-                                       checked
-                                       onchange="calculateTotal()">
-                            </td>
-                            <td>
-                                <div class="item-row">
-                                    {% if item.images.first %}
-                                        <img src="{{ item.images.first.image.url }}" class="item-img">
-                                    {% else %}
-                                        <div class="item-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
-                                    {% endif %}
-                                    <div>
-                                        <a href="{% url 'product_detail' item.id %}" class="item-name">{{ item.product_name }}</a>
-                                        <div class="item-ref">Ref: {{ item.id }}</div>
-                                        <div class="mt-1 small">USD {{ item.price }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center">
-                                    <div class="qty-control">
-                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
-                                        <span class="qty-display" id="qty-{{ item.id }}">{{ item.quantity }}</span>
-                                        <button class="qty-btn" onclick="updateQty({{ item.id }}, 'increase')">+</button>
-                                    </div>
-                                </div>
-                                <button class="btn btn-link text-muted small text-decoration-none mt-2 p-0" onclick="updateQty({{ item.id }}, 'remove')">Remove</button>
-                            </td>
-                            <td class="text-end" id="price-total-{{ item.id }}">
-                                USD {{ item.total_price }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Left: Cart Items -->
+            <div class="col-lg-8 pe-lg-5">
+                <div class="row cart-header">
+                    <div class="col-1 text-center"><i class="bi bi-check-square-fill"></i></div>
+                    <div class="col-5">Product</div>
+                    <div class="col-3 text-center">Quantity</div>
+                    <div class="col-3 text-end">Total</div>
+                </div>
+
+                {% for item in cart_items %}
+                <div class="row cart-item align-items-center">
+                    <div class="col-1 text-center">
+                        <input type="checkbox" class="custom-checkbox" checked>
+                    </div>
+                    <div class="col-5 d-flex gap-3">
+                        {% if item.images.first %}
+                            <img src="{{ item.images.first.image.url }}" class="cart-img">
+                        {% else %}
+                            <div class="cart-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                        {% endif %}
+                        <div>
+                            <a href="{% url 'product_detail' item.id %}" class="product-name">{{ item.product_name }}</a>
+                            <div class="product-ref">Ref: {{ item.id }}</div>
+                            <div class="product-price">USD {{ item.price }}</div>
+                        </div>
+                    </div>
+                    <div class="col-3 text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="qty-wrapper">
+                                <button class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
+                                <span class="qty-display">{{ item.quantity }}</span>
+                                <button class="qty-btn" onclick="updateQty({{ item.id }}, 'increase')">+</button>
+                            </div>
+                            <div class="mt-2">
+                                <span class="remove-link" onclick="updateQty({{ item.id }}, 'remove')">Remove</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 text-end total-price">
+                        USD {{ item.total_price }}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
 
-            <!-- Summary Sidebar -->
-            <div class="col-md-4">
+            <!-- Right: Summary -->
+            <div class="col-lg-4">
                 <div class="summary-box">
-                    <h5 class="font-serif mb-4">Summary</h5>
+                    <h3 class="summary-title">Summary</h3>
                     <div class="summary-row">
                         <span>Subtotal</span>
-                        <span id="subtotalDisplay">$0.00</span>
+                        <span>USD {{ cart_items|length|default:"0.00" }} items</span> <!-- Placeholder logic for count -->
                     </div>
-                    <div class="summary-row text-muted small">
+                    <div class="summary-row text-muted">
                         <span>Shipping</span>
-                        <span>Calculated at checkout</span>
+                        <span class="text-end" style="max-width: 120px;">Calculated at checkout</span>
                     </div>
-                    <div class="summary-row total-row">
-                        <span>Total</span>
-                        <span id="totalDisplay">$0.00</span>
+                    <div class="summary-row summary-total">
+                        <span>TOTAL</span>
+                        <span>USD {{ total }}</span>
                     </div>
 
-                    <button class="btn-checkout" id="checkoutBtn">Proceed to Checkout</button>
+                    <a href="{% url 'checkout' %}" class="btn-checkout">PROCEED TO CHECKOUT</a>
                 </div>
             </div>
         </div>
         {% else %}
             <div class="text-center py-5">
-                <h3 class="font-serif mb-3">Your bag is empty</h3>
-                <p class="text-muted">Discover our latest collections.</p>
-                <a href="{% url 'home' %}" class="btn btn-dark rounded-0 px-5 py-3 mt-3 text-uppercase" style="letter-spacing: 2px;">Start Shopping</a>
+                <p class="mb-4 text-muted">Your shopping bag is empty.</p>
+                <a href="{% url 'home' %}" class="btn btn-dark rounded-0 px-5 py-3 text-uppercase">Start Shopping</a>
             </div>
         {% endif %}
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        // Update Quantity AJAX
         function updateQty(productId, action) {
             fetch("{% url 'update_cart' %}", {
                 method: "POST",
                 headers: {
                     "X-CSRFToken": "{{ csrf_token }}",
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ product_id: productId, action: action })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    location.reload(); // Simple reload to refresh pricing/display
+                    location.reload();
                 }
             });
         }
 
-        // Selection Logic
-        function toggleAll(source) {
-            const checkboxes = document.querySelectorAll('.item-check');
-            checkboxes.forEach(cb => {
-                cb.checked = source.checked;
-            });
-            calculateTotal();
-        }
-
-        function calculateTotal() {
-            let total = 0;
-            let hasSelection = false;
-            const checkboxes = document.querySelectorAll('.item-check');
-
-            checkboxes.forEach(cb => {
-                if(cb.checked) {
-                    hasSelection = true;
-                    const price = parseFloat(cb.getAttribute('data-price'));
-                    const qty = parseInt(cb.getAttribute('data-qty'));
-                    total += price * qty;
-                }
-            });
-
-            // Update UI
-            const formattedTotal = "USD " + total.toFixed(2);
-            document.getElementById('subtotalDisplay').innerText = formattedTotal;
-            document.getElementById('totalDisplay').innerText = formattedTotal;
-
-            // Enable/Disable Checkout
-            document.getElementById('checkoutBtn').disabled = !hasSelection;
-
-            // Update Select All state based on individual checks
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            const selectAllCb = document.getElementById('selectAll');
-            if(selectAllCb) selectAllCb.checked = allChecked;
-        }
-
-        // Run calculation on load
-        document.addEventListener('DOMContentLoaded', calculateTotal);
-
-        /* ✨ Google Translate Custom Integration ✨ */
+        // === Language & Text Size Logic ===
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
                 pageLanguage: 'en',
@@ -387,11 +248,14 @@
             location.reload();
         }
 
-        // Initialize script
         const script = document.createElement('script');
         script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
         document.body.appendChild(script);
+
+        function setFontSize(size) {
+            document.documentElement.style.fontSize = size;
+            localStorage.setItem('userFontSize', size);
+        }
     </script>
-{% include 'heartbeat.html' %}
 </body>
 </html>

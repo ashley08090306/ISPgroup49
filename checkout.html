@@ -1,0 +1,418 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proceed to Payment | RAFAYEL & GRACE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --chanel-black: #000000;
+            --cartier-red: #9d2235; /* Similar to the red in the image */
+            --bg-gray: #f8f9fa;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #fff; color: #000; }
+
+        /* Typography */
+        h1, h2, h3, h4, h5 { font-family: 'Playfair Display', serif; }
+        .page-title { text-align: center; text-transform: uppercase; font-size: 1.5rem; letter-spacing: 0.15em; margin: 40px 0 60px; font-weight: 600; }
+
+        /* Accordion Steps */
+        .checkout-step { border-top: 1px solid #eee; padding: 25px 0; }
+        .step-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .step-title { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1em; margin: 0; font-weight: 600; display: flex; align-items: center; }
+        .step-number { font-size: 1.2rem; font-weight: 400; margin-right: 15px; width: 20px; }
+        .step-edit { font-size: 0.9rem; text-decoration: underline; color: #000; background: none; border: none; padding: 0; text-transform: capitalize; }
+
+        /* Step Content */
+        .step-content { display: none; padding-top: 30px; padding-left: 35px; }
+        .step-content.active { display: block; }
+
+        /* Forms */
+        .form-control { border: none; border-bottom: 1px solid #000; border-radius: 0; padding: 10px 0; background: transparent; box-shadow: none !important; }
+        .form-control:focus { border-bottom: 2px solid #000; }
+        .form-label { font-size: 0.8rem; color: #666; margin-top: 15px; }
+        .form-check-input { border-color: #000; width: 1.2em; height: 1.2em; margin-top: 0.1em; }
+        .form-check-input:checked { background-color: #000; border-color: #000; }
+
+        /* Buttons */
+        .btn-continue { background-color: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.15em; padding: 15px 30px; width: 100%; border: none; margin-top: 30px; font-size: 0.9rem; transition: all 0.3s; }
+        .btn-continue:hover { background-color: #333; color: #fff; }
+
+        /* Order Summary */
+        .summary-box { background-color: #fff; padding: 30px; position: sticky; top: 40px; }
+        .summary-title { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 30px; font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 15px; display: flex; justify-content: space-between; }
+        .summary-product { display: flex; gap: 15px; margin-bottom: 20px; }
+        .summary-img { width: 80px; height: 80px; object-fit: cover; background: #f9f9f9; }
+        .summary-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+        .summary-desc { font-size: 0.8rem; color: #666; margin-top: 5px; }
+        .summary-price { font-weight: 600; font-size: 0.9rem; margin-top: 10px; display: block; }
+
+        .totals-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.9rem; }
+        .totals-row.final { border-top: 1px solid #eee; padding-top: 20px; font-weight: 700; font-size: 1.1rem; margin-top: 20px; }
+
+        /* Address Cards */
+        .address-card-label { display: block; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; }
+        .address-card-label:hover { border-color: #000; }
+        .address-card-label input:checked + div { font-weight: 600; }
+
+        /* Payment Icons */
+        .payment-icons i { font-size: 1.5rem; margin-left: 5px; color: #333; }
+
+        .static-summary-text { font-size: 0.95rem; color: #000; margin-top: 5px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="text-center py-4 border-bottom">
+        <a href="{% url 'home' %}" class="text-decoration-none text-dark" style="font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; letter-spacing: 0.2em;">RAFAYEL & GRACE</a>
+    </div>
+
+    <h1 class="page-title">PROCEED TO PAYMENT</h1>
+
+    <div class="container pb-5">
+        <form method="POST" action="{% url 'checkout' %}" id="checkoutForm">
+            {% csrf_token %}
+            <div class="row">
+                <!-- Left Column: Steps -->
+                <div class="col-lg-7">
+
+                    <!-- STEP 1: LOGIN INFORMATION -->
+                    <div class="checkout-step" id="step1">
+                        <div class="step-header">
+                            <h3 class="step-title"><span class="step-number">1</span> LOGIN INFORMATION</h3>
+                            <button type="button" class="step-edit" onclick="goToStep(1)" style="display: none;">Edit</button>
+                        </div>
+                        <div class="step-content active">
+                            {% if user.is_authenticated %}
+                                <p class="mb-4">You are logged in as <strong>{{ user.email }}</strong></p>
+                                <button type="button" class="btn-continue" onclick="completeStep(1)">Continue</button>
+                            {% else %}
+                                <div class="mb-3">
+                                    <label class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" name="email" placeholder="email@example.com">
+                                </div>
+                                <button type="button" class="btn-continue" onclick="completeStep(1)">Continue as Guest</button>
+                                <div class="mt-3 text-center small">
+                                    <a href="{% url 'login' %}?next={% url 'checkout' %}" class="text-dark fw-bold">Login</a> for a faster checkout.
+                                </div>
+                            {% endif %}
+                        </div>
+                        <!-- Static view after completion -->
+                        <div class="static-view ms-4 mt-2" style="display:none;">
+                            {{ user.email }}
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: SHIPPING ADDRESS -->
+                    <div class="checkout-step" id="step2">
+                        <div class="step-header">
+                            <h3 class="step-title"><span class="step-number">2</span> SHIPPING ADDRESS</h3>
+                            <button type="button" class="step-edit" onclick="goToStep(2)" style="display: none;">Edit</button>
+                        </div>
+                        <div class="step-content">
+                            <!-- Hidden input to toggle mode -->
+                            <input type="hidden" name="address_source" id="addressSource" value="new">
+
+                            {% if saved_addresses %}
+                                <h6 class="mb-3 text-uppercase small fw-bold text-muted">Saved Addresses</h6>
+                                {% for addr in saved_addresses %}
+                                <label class="address-card-label">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <input type="radio" name="selected_address_id" value="{{ addr.id }}" class="form-check-input mt-1" onchange="selectAddress('existing')">
+                                        <div>
+                                            <div>{{ user.first_name }} {{ user.last_name }}</div>
+                                            <div class="small text-muted">{{ addr.detail_address }}</div>
+                                            <div class="small text-muted">{{ addr.street }}, {{ addr.city }} {{ addr.country }}</div>
+                                        </div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+
+                                <label class="address-card-label">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input type="radio" name="selected_address_id" value="new" class="form-check-input" onchange="selectAddress('new')">
+                                        <div class="text-uppercase small fw-bold">Use a different address</div>
+                                    </div>
+                                </label>
+                            {% endif %}
+
+                            <!-- New Address Form -->
+                            <div id="newAddressForm" style="{% if saved_addresses %}display:none;{% endif %}">
+                                <div class="row">
+                                    <div class="col-md-2 mb-3">
+                                        <label class="form-label">Title*</label>
+                                        <div class="d-flex gap-3 pt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="title" id="titleMr" value="Mr" checked>
+                                                <label class="form-check-label small" for="titleMr">Mr.</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="title" id="titleMs" value="Ms">
+                                                <label class="form-check-label small" for="titleMs">Ms.</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">First name*</label>
+                                        <input type="text" name="address_first_name" class="form-control" value="{{ user.first_name }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Last name*</label>
+                                        <input type="text" name="address_last_name" class="form-control" value="{{ user.last_name }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Address*</label>
+                                        <input type="text" name="address_detail" class="form-control" placeholder="House number and street name">
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Additional information</label>
+                                        <input type="text" name="address_street" class="form-control" placeholder="Apartment, suite, unit etc. (optional)">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">City*</label>
+                                        <input type="text" name="address_city" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Country/Region*</label>
+                                        <input type="text" name="address_country" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Phone*</label>
+                                        <input type="text" name="address_phone" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-continue" onclick="completeStep(2)">Save and Continue</button>
+                        </div>
+                        <div class="static-view ms-4 mt-2" style="display:none;">
+                            <span id="staticAddressPreview"></span>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: DELIVERY METHOD -->
+                    <div class="checkout-step" id="step3">
+                        <div class="step-header">
+                            <h3 class="step-title"><span class="step-number">3</span> DELIVERY METHOD</h3>
+                            <button type="button" class="step-edit" onclick="goToStep(3)" style="display: none;">Edit</button>
+                        </div>
+                        <div class="step-content">
+                            <div class="mb-4">
+                                <label class="address-card-label d-flex justify-content-between align-items-center">
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <input type="radio" name="delivery_method" value="express" class="form-check-input" checked>
+                                        <div>
+                                            <div class="fw-bold text-uppercase" style="font-size: 0.9rem;">DHL Express</div>
+                                            <div class="small text-muted" id="dateExpress">Tomorrow</div>
+                                        </div>
+                                    </div>
+                                    <div class="fw-bold bg-light px-2 py-1 small">FREE</div>
+                                </label>
+
+                                <label class="address-card-label d-flex justify-content-between align-items-center">
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <input type="radio" name="delivery_method" value="standard" class="form-check-input">
+                                        <div>
+                                            <div class="fw-bold text-uppercase" style="font-size: 0.9rem;">DHL Standard</div>
+                                            <div class="small text-muted" id="dateStandard">3-4 business days</div>
+                                        </div>
+                                    </div>
+                                    <div class="fw-bold bg-light px-2 py-1 small">FREE</div>
+                                </label>
+
+                                <div class="d-flex gap-2 mt-3 text-muted small">
+                                    <i class="bi bi-info-circle"></i>
+                                    <div>The delivery date depends on stock availability and the customization service requested.</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-continue" onclick="completeStep(3)">Save and Continue</button>
+                        </div>
+                        <div class="static-view ms-4 mt-2" style="display:none;">
+                            DHL Express (Free)
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: PAYMENT DETAILS -->
+                    <div class="checkout-step" id="step4">
+                        <div class="step-header">
+                            <h3 class="step-title"><span class="step-number">4</span> PAYMENT DETAILS</h3>
+                        </div>
+                        <div class="step-content">
+                            <div class="mb-4">
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="billingSame" checked>
+                                    <label class="form-check-label" for="billingSame">
+                                        Same as the shipping address
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="address-card-label d-flex justify-content-between align-items-center">
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <input type="radio" name="payment_method" value="credit_card" class="form-check-input" checked>
+                                            <span class="text-uppercase" style="font-size: 0.9rem;">Credit/Debit Card</span>
+                                        </div>
+                                        <div class="payment-icons">
+                                            <i class="bi bi-credit-card-2-front"></i>
+                                            <i class="bi bi-bank"></i>
+                                        </div>
+                                    </label>
+
+                                    <label class="address-card-label d-flex justify-content-between align-items-center">
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <input type="radio" name="payment_method" value="apple_pay" class="form-check-input">
+                                            <span class="text-uppercase" style="font-size: 0.9rem;">Apple Pay</span>
+                                        </div>
+                                        <div class="payment-icons"><i class="bi bi-apple"></i></div>
+                                    </label>
+
+                                    <label class="address-card-label d-flex justify-content-between align-items-center">
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <input type="radio" name="payment_method" value="paypal" class="form-check-input">
+                                            <span class="text-uppercase" style="font-size: 0.9rem;">PayPal</span>
+                                        </div>
+                                        <div class="payment-icons"><i class="bi bi-paypal"></i></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-continue" style="background-color: #9d2235;">Pay ${{ total }}</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Summary -->
+                <div class="col-lg-5">
+                    <div class="summary-box">
+                        <div class="summary-title">
+                            <span>Summary of your order</span>
+                            <a href="{% url 'cart_view' %}" class="text-dark text-decoration-underline" style="font-size: 0.8rem; text-transform: capitalize;">Modify</a>
+                        </div>
+                        <div class="small text-muted mb-3">({{ cart_items|length }} articles)</div>
+
+                        {% for item in cart_items %}
+                        <div class="summary-product">
+                            {% if item.images.first %}
+                                <img src="{{ item.images.first.image.url }}" class="summary-img">
+                            {% else %}
+                                <div class="summary-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                            {% endif %}
+                            <div>
+                                <div class="summary-name">{{ item.product_name }}</div>
+                                <div class="summary-desc">{{ item.description|truncatechars:50 }}</div>
+                                <div class="summary-price">${{ item.price }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="totals-row">
+                                <span>Subtotal</span>
+                                <span>${{ total }}</span>
+                            </div>
+                            <div class="totals-row">
+                                <span>Shipping</span>
+                                <span>Free</span>
+                            </div>
+                            <div class="totals-row final">
+                                <span>TOTAL</span>
+                                <span>${{ total }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set dynamic dates
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 4);
+        document.getElementById('dateExpress').innerText = tomorrow.toLocaleDateString('en-US', dateOptions);
+        document.getElementById('dateStandard').innerText = nextWeek.toLocaleDateString('en-US', dateOptions);
+
+        function completeStep(stepNumber) {
+            // Logic to validate current step (simplified for demo)
+            const currentStepDiv = document.querySelector(`#step${stepNumber} .step-content`);
+            const nextStepDiv = document.querySelector(`#step${stepNumber + 1} .step-content`);
+            const editBtn = document.querySelector(`#step${stepNumber} .step-edit`);
+            const staticView = document.querySelector(`#step${stepNumber} .static-view`);
+
+            // Hide current, show next
+            if(currentStepDiv) currentStepDiv.classList.remove('active');
+            if(nextStepDiv) nextStepDiv.classList.add('active');
+            if(editBtn) editBtn.style.display = 'block';
+
+            // Populate static view for address
+            if (stepNumber === 2) {
+                const source = document.getElementById('addressSource').value;
+                let text = "New Address";
+                if (source === 'existing') {
+                    const selectedRadio = document.querySelector('input[name="selected_address_id"]:checked');
+                    if(selectedRadio) {
+                        const parent = selectedRadio.closest('label');
+                        // Hacky way to get text for demo
+                        text = parent.querySelector('div > div > div:nth-child(2)').innerText;
+                    }
+                } else {
+                    const street = document.querySelector('input[name="address_detail"]').value;
+                    const city = document.querySelector('input[name="address_city"]').value;
+                    if(street && city) text = street + ", " + city;
+                }
+                document.getElementById('staticAddressPreview').innerText = text;
+            }
+            if(staticView) staticView.style.display = 'block';
+        }
+
+        function goToStep(stepNumber) {
+            // Hide all contents
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            // Show target
+            const target = document.querySelector(`#step${stepNumber} .step-content`);
+            if(target) target.classList.add('active');
+
+            // Hide static views for this step
+            const staticView = document.querySelector(`#step${stepNumber} .static-view`);
+            if(staticView) staticView.style.display = 'none';
+
+            // Hide edit button for this step
+            const editBtn = document.querySelector(`#step${stepNumber} .step-edit`);
+            if(editBtn) editBtn.style.display = 'none';
+        }
+
+        function selectAddress(type) {
+            const form = document.getElementById('newAddressForm');
+            const sourceInput = document.getElementById('addressSource');
+            sourceInput.value = type;
+
+            if (type === 'new') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+
+        // Init: Open step 1 or 2 depending on auth
+        {% if user.is_authenticated %}
+            completeStep(1); // Auto-complete login step if authenticated
+        {% endif %}
+    </script>
+</body>
+</html>

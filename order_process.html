@@ -1,0 +1,350 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Process Order #{{ order.id }} - Vendor Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+
+        /* Sidebar Styles */
+        .sidebar { background-color: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; border-right: 1px solid #222; }
+        .sidebar a { color: #999; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; border-left: 4px solid transparent; }
+        .sidebar a:hover { color: #fff; background-color: #1a1a1a; }
+        .sidebar a.active { color: #fff; background-color: #111; border-left: 4px solid #fff; }
+
+        .user-profile-section { background-color: #1a1a1a; margin-top: auto; padding: 20px; border-top: 1px solid #333; }
+        .user-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .user-info-text h6 { color: #fff; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+        .user-info-text small { color: #aaa; font-size: 0.8rem; display: block; margin-top: 2px; }
+        .btn-logout { margin-top: 15px; color: #ff6b6b; font-size: 0.85rem; display: flex; align-items: center; text-decoration: none; transition: all 0.2s; padding: 5px 0; }
+        .btn-logout:hover { color: #ff4c4c; transform: translateX(3px); }
+
+        /* Main Content Styles */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .back-link { text-decoration: none; color: #666; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
+        .back-link:hover { color: #000; }
+
+        .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-radius: 8px; margin-bottom: 25px; }
+        .card-header { background: #fff; border-bottom: 1px solid #eee; padding: 20px 25px; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; color: #444; }
+        .card-body { padding: 25px; }
+
+        /* Status Badge Logic */
+        .status-badge { font-size: 0.8rem; padding: 5px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-processed { background-color: #d1e7dd; color: #0f5132; }
+        .status-shipped { background-color: #cff4fc; color: #055160; }
+        .status-cancelled { background-color: #f8d7da; color: #842029; }
+
+        /* Product Table */
+        .product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; background: #f9f9f9; border: 1px solid #eee; }
+        .info-label { font-size: 0.75rem; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 5px; }
+        .info-value { font-size: 0.95rem; color: #000; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar p-0">
+                <div class="p-4 text-center border-bottom border-secondary">
+                    <h5 class="mb-0 fw-bold tracking-wider">VENDOR PORTAL</h5>
+                </div>
+                <nav class="mt-3">
+                    <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <a href="{% url 'vendor_reviews' %}"><i class="bi bi-chat-left-text me-2"></i> Review Management</a>
+                    <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
+                    <a href="{% url 'vendor_products' %}"><i class="bi bi-box-seam me-2"></i> My Products</a>
+                    <a href="{% url 'vendor_orders' %}" class="active"><i class="bi bi-receipt me-2"></i> Orders</a>
+                    <a href="{% url 'home' %}" target="_blank">
+                        <i class="bi bi-shop me-2"></i> View Shop
+                        <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.7em;"></i>
+                    </a>
+                </nav>
+                <div class="user-profile-section">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">{{ request.user.username|slice:":1"|upper }}</div>
+                        <div class="user-info-text" style="overflow: hidden;">
+                            <h6 class="text-truncate">{{ request.user.username }}</h6>
+                            <small class="text-truncate">{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn-logout"><i class="bi bi-box-arrow-right me-2"></i> Log out</a>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="col-md-10 p-5">
+                <!-- Header -->
+                <div class="page-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <a href="{% url 'vendor_orders' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to Orders</a>
+                        <div style="width: 1px; height: 20px; background: #ddd;"></div>
+                        <h2 class="mb-0">Order #{{ order.id }}</h2>
+
+                        <!-- Status Badge Display -->
+                        <span class="status-badge
+                            {% if order.status == 'Pending' %}status-pending
+                            {% elif order.status == 'Processed' %}status-processed
+                            {% elif order.status == 'Shipped' %}status-shipped
+                            {% elif order.status == 'Cancelled' %}status-cancelled{% endif %}">
+                            {{ order.status }}
+                        </span>
+                    </div>
+                    <div class="text-muted small">Placed on {{ order.order_date|date:"F d, Y at H:i" }}</div>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success border-0 shadow-sm mb-4">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="row">
+                    <!-- Left Column: Details -->
+                    <div class="col-lg-8">
+                        <!-- Product Details -->
+                        <div class="card">
+                            <div class="card-header">Order Items</div>
+                            <div class="card-body p-0">
+                                <table class="table align-middle mb-0">
+                                    <thead class="bg-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th class="ps-4 py-3">Product</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th class="text-end pe-4">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="ps-4 py-3">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    {% if order.product.images.first %}
+                                                        <img src="{{ order.product.images.first.image.url }}" class="product-img">
+                                                    {% else %}
+                                                        <div class="product-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <div class="fw-bold">{{ order.product.product_name }}</div>
+                                                        <div class="small text-muted">ID: {{ order.product.id }}</div>
+                                                        <div class="small text-muted">Brand: {{ order.product.brand }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>${{ order.product.price }}</td>
+                                            <td>x {{ order.quantity }}</td>
+                                            <td class="text-end pe-4 fw-bold">${{ order.total_price }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Info Grid -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header"><i class="bi bi-person me-2"></i> Customer Details</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="info-label">Name</div>
+                                            <div class="info-value">{{ order.user.first_name }} {{ order.user.last_name }}</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="info-label">Username</div>
+                                            <div class="info-value">@{{ order.user.username }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="info-label">Email</div>
+                                            <div class="info-value"><a href="mailto:{{ order.user.email }}" class="text-decoration-none">{{ order.user.email }}</a></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header"><i class="bi bi-geo-alt me-2"></i> Shipping Address</div>
+                                    <div class="card-body">
+                                        {% with addr=order.user.addresses.first %}
+                                            {% if addr %}
+                                                <div class="info-value mb-1">{{ addr.detail_address }}</div>
+                                                <div class="info-value mb-1">{{ addr.street }}, {{ addr.district }}</div>
+                                                <div class="info-value mb-1">{{ addr.city }}, {{ addr.country }}</div>
+                                                <span class="badge bg-light text-dark border mt-2">{{ addr.get_category_display }}</span>
+                                            {% else %}
+                                                <div class="text-muted fst-italic">No address info available.</div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Actions -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm" style="background: #111; color: white;">
+                            <div class="card-body p-4">
+                                <h5 class="mb-4">Update Status</h5>
+                                <form method="POST" id="statusForm">
+                                    {% csrf_token %}
+                                    <label class="text-white-50 small text-uppercase fw-bold mb-2">Change Status To:</label>
+                                    <select name="status" id="statusSelect" class="form-select form-select-lg mb-4" style="border: none;">
+                                        <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                                        <option value="Processed" {% if order.status == 'Processed' %}selected{% endif %}>Processed</option>
+                                        <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+
+                                    <button type="submit" id="updateBtn" class="btn btn-light w-100 fw-bold py-3 text-uppercase">Update Order</button>
+                                </form>
+                                <div class="mt-4 pt-3 border-top border-secondary text-white-50 small text-center">
+                                    Notification email will be sent to customer automatically upon update.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨✨✨ MODALS FOR STATUS LOGIC ✨✨✨ -->
+
+    <!-- Modal 1: Locked Status (Processed or Cancelled) -->
+    <div class="modal fade" id="lockedStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-uppercase">Action Not Allowed</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 text-muted" id="lockedMessage">Order is completed/cancelled and cannot be changed.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Shipped to Pending Warning -->
+    <div class="modal fade" id="shippedWarningModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-uppercase">Order Already Shipped</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 text-muted">The order has been shipped. You cannot revert it to "Pending".</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success px-4" id="triggerProcessedBtn">Mark as Processed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Confirm Processed -->
+    <div class="modal fade" id="confirmProcessedModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-uppercase">Confirm Completion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="mb-0 text-muted">Are you sure you want to change the status to <strong>Processed</strong>?</p>
+                    <p class="small text-muted mt-2">This action implies the order is complete and cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark px-4" id="confirmProcessedActionBtn">Yes, Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('statusForm');
+            const select = document.getElementById('statusSelect');
+
+            // Current status from backend
+            const currentStatus = "{{ order.status }}";
+
+            // Initialize Modals
+            const lockedModal = new bootstrap.Modal(document.getElementById('lockedStatusModal'));
+            const shippedWarningModal = new bootstrap.Modal(document.getElementById('shippedWarningModal'));
+            const confirmProcessedModal = new bootstrap.Modal(document.getElementById('confirmProcessedModal'));
+
+            // DOM Elements in Modals
+            const lockedMessageEl = document.getElementById('lockedMessage');
+            const triggerProcessedBtn = document.getElementById('triggerProcessedBtn');
+            const confirmProcessedActionBtn = document.getElementById('confirmProcessedActionBtn');
+
+            form.addEventListener('submit', function(e) {
+                const newStatus = select.value;
+
+                // 2. Processed Logic: Cannot change if already processed
+                if (currentStatus === 'Processed') {
+                    e.preventDefault();
+                    lockedMessageEl.innerText = "Order is completed, status cannot be changed.";
+                    lockedModal.show();
+                    // Reset selection
+                    select.value = currentStatus;
+                    return;
+                }
+
+                // 3. Cancelled Logic: Cannot change if cancelled
+                if (currentStatus === 'Cancelled') {
+                    e.preventDefault();
+                    lockedMessageEl.innerText = "Order is cancelled, status cannot be changed.";
+                    lockedModal.show();
+                    // Reset selection
+                    select.value = currentStatus;
+                    return;
+                }
+
+                // 1. Shipped Logic
+                if (currentStatus === 'Shipped') {
+                    if (newStatus === 'Pending') {
+                        // Prevent: Shipped -> Pending
+                        e.preventDefault();
+                        shippedWarningModal.show();
+                        // Reset selection temporarily (until user decides)
+                        select.value = currentStatus;
+                        return;
+                    }
+                    // Shipped -> Processed is allowed directly via dropdown,
+                    // OR Shipped -> Cancelled (if logic permits, prompt didn't forbid this explicitly, but standard logic usually allows cancel unless locked)
+                }
+            });
+
+            // Logic for "Mark as Processed" button inside the Warning Modal
+            triggerProcessedBtn.addEventListener('click', function() {
+                shippedWarningModal.hide();
+                // Show confirmation before applying
+                setTimeout(() => {
+                    confirmProcessedModal.show();
+                }, 400); // slight delay for smooth transition
+            });
+
+            // Logic for "Yes, Confirm" button inside Confirm Modal
+            confirmProcessedActionBtn.addEventListener('click', function() {
+                // Programmatically set value and submit
+                select.value = 'Processed';
+                // Remove listener to prevent loop or simple submit() call
+                form.submit();
+            });
+        });
+    </script>
+</body>
+</html>

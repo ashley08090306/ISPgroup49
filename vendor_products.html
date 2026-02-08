@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +33,87 @@
         .form-control:focus { box-shadow: none; border-color: #000; z-index: 0; }
         .table-responsive { overflow-x: auto; }
         .product-name-cell { white-space: normal !important; word-wrap: break-word; word-break: break-word; }
+
+        /* ✨ Pagination Styling (Black/White/Gray) ✨ */
+        .custom-page-link {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px !important;
+            border: 1px solid #dee2e6;
+            color: #333;
+            background-color: #fff;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .custom-page-link:hover {
+            background-color: #f0f0f0;
+            color: #000;
+            border-color: #ccc;
+        }
+        .page-item.active .custom-page-link {
+            background-color: #000; /* Black Active */
+            border-color: #000;
+            color: #fff;
+            z-index: 1;
+        }
+        .page-item.disabled .disabled-link {
+            background-color: #f8f9fa;
+            color: #ccc;
+            border-color: #eee;
+        }
+
+        /* ✨ Jump to Page Styling (White Background Version) ✨ */
+        .jump-wrapper {
+            background-color: #fff; /* 白底 */
+            color: #333; /* 黑字 */
+            border: 1px solid #dee2e6; /* 灰色边框 */
+            padding: 6px 15px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .jump-input {
+            background: transparent;
+            border: none;
+            color: #333; /* 黑字 */
+            width: 30px;
+            text-align: right;
+            font-weight: bold;
+            outline: none;
+            /* remove arrows */
+            -moz-appearance: textfield;
+        }
+        .jump-input::-webkit-outer-spin-button,
+        .jump-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .jump-total {
+            color: #666; /* 浅黑 */
+            margin-left: 5px;
+            letter-spacing: 1px;
+        }
+        .btn-jump {
+            background-color: #333; /* 按钮保持深色以示区别，或者改为白色也可 */
+            /* 如果要完全白底黑字，可以取消下面的注释，使用白色按钮 */
+            background-color: #fff; color: #333; border: 1px solid #dee2e6;
+
+            padding: 6px 15px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-jump:hover {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
     </style>
 </head>
 <body>
@@ -44,6 +126,8 @@
 
                 <nav class="mt-3">
                     <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <!-- ✨ NEW: Review Management Link ✨ -->
+                    <a href="{% url 'vendor_reviews' %}"><i class="bi bi-chat-left-text me-2"></i> Review Management</a>
                     <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
                     <a href="{% url 'vendor_products' %}" class="active"><i class="bi bi-box-seam me-2"></i> My Products</a>
                     <a href="{% url 'vendor_orders' %}"><i class="bi bi-receipt me-2"></i> Orders</a>
@@ -206,6 +290,59 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- ✨✨✨ Pagination Controls ✨✨✨ -->
+                        {% if products.has_other_pages %}
+                        <div class="p-4 border-top">
+                            <nav aria-label="Page navigation" class="mb-3">
+                                <ul class="pagination justify-content-center gap-2 m-0">
+                                    {% if products.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link custom-page-link" href="?page={{ products.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link custom-page-link disabled-link">&laquo;</span>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in custom_page_range %}
+                                        {% if i == products.paginator.ELLIPSIS %}
+                                            <li class="page-item disabled"><span class="page-link custom-page-link border-0">...</span></li>
+                                        {% else %}
+                                            <li class="page-item {% if i == products.number %}active{% endif %}">
+                                                <a class="page-link custom-page-link" href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ i }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if products.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link custom-page-link" href="?page={{ products.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link custom-page-link disabled-link">&raquo;</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+
+                            <!-- ✨✨✨ Jump to Page Control ✨✨✨ -->
+                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                <div class="jump-wrapper">
+                                    <input type="number" id="jumpPageInput" value="{{ products.number }}" min="1" max="{{ products.paginator.num_pages }}" class="jump-input">
+                                    <span class="jump-total">/ {{ products.paginator.num_pages }}</span>
+                                </div>
+                                <button onclick="jumpToPage()" class="btn-jump">跳转</button>
+                            </div>
+                        </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
@@ -220,6 +357,17 @@
                 if (video) { video.pause(); video.currentTime = 0; }
             });
         });
+
+        // ✨ Page Jump Logic
+        function jumpToPage() {
+            const pageNum = document.getElementById('jumpPageInput').value;
+            if (pageNum) {
+                // Get current URL params to preserve search queries etc.
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('page', pageNum);
+                window.location.search = urlParams.toString();
+            }
+        }
     </script>
 {% include 'heartbeat.html' %}
 </body>

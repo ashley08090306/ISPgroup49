@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400&display=swap" rel="stylesheet">
     <style>
         body {
-            /* 背景图：这里用一张建筑或天空的高级图，你可以换成自己的 */
+            /* 背景图 */
             background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
@@ -24,11 +24,11 @@
 
         .error-card {
             background-color: white;
-            padding: 60px 40px;
+            padding: 70px 40px; /* 稍微增加了上下内边距，让卡片更修长 */
             max-width: 800px;
             width: 90%;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
             position: relative;
         }
 
@@ -45,35 +45,49 @@
         }
 
         .message-primary {
-            font-size: 1.1rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
             color: #333;
-            margin-bottom: 20px;
-            line-height: 1.6;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .message-secondary {
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
-            color: #777;
-            margin-bottom: 40px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            color: #666;
+            margin-bottom: 35px; /* 从 40px 减小到 35px，拉近按钮 */
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        /* ✨ 新增：专门针对中文的样式优化 */
+        .zh-text {
+            display: block;
+            font-size: 1rem; /* 比英文稍微大一点，视觉上才平衡 */
+            margin-top: 12px; /* 中英文之间增加一点呼吸感 */
+            color: #444; /* 颜色稍微深一点，增加可读性 */
+            letter-spacing: 0.05em; /* 中文稍微加一点点字间距，更优雅 */
         }
 
         .btn-home {
+            display: inline-block;
             background-color: black;
             color: white;
-            border: none;
-            padding: 12px 30px;
+            border: 1px solid black;
+            padding: 14px 40px; /* 按钮稍微加大一点，更有份量感 */
             text-transform: uppercase;
             letter-spacing: 0.2em;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-decoration: none;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
         }
 
         .btn-home:hover {
-            background-color: #333;
-            color: white;
+            background-color: white;
+            color: black;
         }
 
         /* 顶部装饰线 */
@@ -95,13 +109,14 @@
         <a href="/" class="brand-logo">RAFAYEL & GRACE</a>
 
         <div class="message-primary">
-            The page you are looking for is currently unavailable.<br>
-            It might have been removed, renamed, or is temporarily inaccessible.
+            Page Unavailable
         </div>
 
         <div class="message-secondary">
-            我们恳请您稍后重新连接<br>
-            Please try to reconnect later
+            The page you are looking for might have been removed or renamed.<br>
+            We invite you to return to the homepage.
+            
+            <span class="zh-text">請返回主頁重試。</span>
         </div>
 
         <a href="/" class="btn-home">Return to Homepage</a>

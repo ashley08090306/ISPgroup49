@@ -1,3 +1,4 @@
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -35,7 +36,7 @@
             border-color: #000;
             background-color: #f8f9fa;
         }
-        
+
         /* ✨✨✨ 新增：图片预览容器样式 ✨✨✨ */
         .preview-container {
             display: flex;
@@ -90,6 +91,8 @@
                 </div>
                 <nav class="mt-3">
                     <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <!-- ✨ NEW: Review Management Link ✨ -->
+                    <a href="{% url 'vendor_reviews' %}"><i class="bi bi-chat-left-text me-2"></i> Review Management</a>
                     <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
                     <a href="{% url 'vendor_products' %}" class="active"><i class="bi bi-box-seam me-2"></i> My Products</a>
                     <a href="{% url 'vendor_orders' %}"><i class="bi bi-receipt me-2"></i> Orders</a>
@@ -175,13 +178,13 @@
                         </div>
 
                         <h5 class="mb-4 border-bottom pb-2">Media</h5>
-                        
+
                         <div class="mb-4">
                             <label class="form-label">Product Images</label>
                             <div class="form-text mb-2">You can upload multiple images. Click below to add images.</div>
-                            
+
                             <input type="file" name="images" id="imageInput" class="d-none" multiple accept="image/*">
-                            
+
                             <div class="upload-area" onclick="document.getElementById('imageInput').click()">
                                 <i class="bi bi-images fs-2 text-secondary"></i>
                                 <p class="mb-0 mt-2 text-dark fw-bold">Click to Add Images</p>
@@ -191,13 +194,13 @@
                             <div class="preview-container" id="imagePreviewContainer">
                                 </div>
                         </div>
-                        
+
                         <div class="mb-5">
                             <label class="form-label">Product Video (Optional)</label>
                             <div class="form-text mb-2">Upload a short video (MP4/WebM) to showcase the product.</div>
-                            
+
                             <input type="file" name="video" id="videoInput" class="form-control" accept="video/*">
-                            
+
                             <div id="videoPreviewBox" class="mt-3 bg-black text-center p-2 rounded d-none" style="max-width: 400px;">
                                 <video id="videoPlayer" controls style="width: 100%; max-height: 250px;">
                                     Your browser does not support video.
@@ -257,7 +260,7 @@
             // === 2. 高级图片处理逻辑 (DataTransfer)  ===
             const imageInput = document.getElementById('imageInput');
             const previewContainer = document.getElementById('imagePreviewContainer');
-            
+
             // 创建一个 DataTransfer 对象来模拟 "可变" 的文件列表
             const dt = new DataTransfer();
 
@@ -274,7 +277,7 @@
                     }
                     if (!isDuplicate) dt.items.add(file);
                 }
-                
+
                 // 将 dt 的文件列表重新赋值给 input
                 this.files = dt.files;
 
@@ -284,11 +287,11 @@
 
             function renderPreviews() {
                 previewContainer.innerHTML = ''; // 清空当前视图
-                
+
                 for (let i = 0; i < dt.files.length; i++) {
                     const file = dt.files[i];
                     const reader = new FileReader();
-                    
+
                     reader.onload = function(e) {
                         const div = document.createElement('div');
                         div.className = 'preview-item';
@@ -307,23 +310,23 @@
             window.removeImage = function(index) {
                 // 创建一个新的 DataTransfer
                 const newDt = new DataTransfer();
-                
+
                 for (let i = 0; i < dt.files.length; i++) {
                     // 跳过要删除的那个索引
                     if (i !== index) {
                         newDt.items.add(dt.files[i]);
                     }
                 }
-                
+
                 // 更新全局 dt
                 dt.items.clear();
                 for (let i = 0; i < newDt.files.length; i++) {
                     dt.items.add(newDt.files[i]);
                 }
-                
+
                 // 更新 Input
                 imageInput.files = dt.files;
-                
+
                 // 重新渲染
                 renderPreviews();
             };
@@ -356,7 +359,7 @@
     <script>
         (function() {
             const HEARTBEAT_URL = "{% url 'heartbeat' %}";
-            const INTERVAL = 20000; 
+            const INTERVAL = 20000;
 
             function sendHeartbeat() {
                 fetch(HEARTBEAT_URL, {

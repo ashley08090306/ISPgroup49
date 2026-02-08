@@ -1,0 +1,196 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews - {{ product.product_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --chanel-black: #000000;
+            --chanel-white: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--chanel-black);
+            background-color: var(--chanel-white);
+        }
+
+        /* Header (Consistent with other pages) */
+        .site-header {
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .brand-logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.8rem;
+            letter-spacing: 0.2em;
+            color: var(--chanel-black);
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+        .btn-back {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-decoration: none;
+            color: #000;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-back:hover { text-decoration: underline; }
+
+        .container-narrow { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+
+        /* Summary Section */
+        .summary-section { margin-bottom: 50px; border-bottom: 1px solid #eee; padding-bottom: 40px; }
+        .page-title { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 30px; text-align: center; }
+
+        .review-header { display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap; }
+        .review-score-box { text-align: center; }
+        .review-score-num { font-size: 3.5rem; font-weight: 700; line-height: 1; }
+        .review-score-text { font-size: 0.8rem; color: #666; text-transform: uppercase; margin-top: 5px; }
+
+        .review-bars-box { flex: 1; max-width: 400px; }
+        .review-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .star-label { font-size: 0.75rem; color: #666; width: 40px; text-align: right; }
+        .progress-track { flex: 1; height: 4px; background-color: #eee; border-radius: 2px; }
+        .progress-fill { height: 100%; background-color: #333; border-radius: 2px; }
+
+        /* Review List */
+        .review-card {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .review-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .reviewer-name { font-weight: 700; font-size: 0.95rem; }
+        .review-date { color: #999; font-size: 0.85rem; }
+        .review-stars { color: #d4af37; font-size: 0.9rem; margin-bottom: 15px; }
+        .review-comment { font-size: 1rem; line-height: 1.6; color: #333; }
+
+        /* Media */
+        .review-media-grid { display: flex; gap: 10px; margin-top: 15px; }
+        .review-media-item { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #eee; }
+
+        /* ✨ Vendor Reply Box (Same as Product Detail) ✨ */
+        .vendor-reply-box {
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 3px solid #000;
+        }
+        .vendor-reply-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .vendor-reply-text {
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.5;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <a href="{% url 'product_detail' product.id %}" class="btn-back">
+            <i class="bi bi-chevron-left"></i> Back
+        </a>
+        <a href="{% url 'home' %}" class="brand-logo">RAFAYEL & GRACE</a>
+    </header>
+
+    <div class="container-narrow">
+        <h1 class="page-title">Ratings & Reviews</h1>
+
+        <!-- Summary -->
+        <div class="summary-section">
+            <div class="review-header">
+                <div class="review-score-box">
+                    <div class="review-score-num">{{ avg_rating }}</div>
+                    <div class="review-score-text">out of 5</div>
+                    <div class="text-muted small mt-1">{{ total_reviews }} Ratings</div>
+                </div>
+                <div class="review-bars-box">
+                    {% for dist in distribution %}
+                    <div class="review-bar-row">
+                        <div class="star-label">
+                            {{ dist.star }} ★
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: {{ dist.percent }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- List -->
+        <div class="reviews-list">
+            {% for review in reviews %}
+            <div class="review-card">
+                <div class="review-top">
+                    <span class="reviewer-name">{{ review.user.username }}</span>
+                    <span class="review-date">{{ review.created_at|date:"M d, Y" }}</span>
+                </div>
+
+                <div class="review-stars">
+                    {% for i in review.filled_stars %}<i class="bi bi-star-fill"></i>{% endfor %}
+                    {% for i in review.empty_stars %}<i class="bi bi-star"></i>{% endfor %}
+                </div>
+
+                <div class="review-comment">{{ review.comment }}</div>
+
+                {% if review.media.exists %}
+                <div class="review-media-grid">
+                    {% for media in review.media.all %}
+                        {% if media.media_type == 'image' %}
+                            <img src="{{ media.file.url }}" class="review-media-item" onclick="window.open(this.src)">
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- ✨ VENDOR REPLY SECTION ✨ -->
+                {% if review.vendor_reply %}
+                <div class="vendor-reply-box">
+                    <div class="vendor-reply-title">
+                        <span>Response from Store</span>
+                        <span>{{ review.replied_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="vendor-reply-text">"{{ review.vendor_reply }}"</div>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+                <div class="text-center py-5 text-muted">No reviews found.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>

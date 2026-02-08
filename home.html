@@ -1,3 +1,4 @@
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -9,12 +10,20 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <script>
+        const savedSize = localStorage.getItem('userFontSize');
+        if (savedSize) {
+            document.documentElement.style.fontSize = savedSize;
+        }
+    </script>
+
     <style>
         :root {
             --chanel-black: #000000;
             --chanel-white: #ffffff;
             --chanel-gray: #f5f5f5;
         }
+
         body {
             font-family: 'Inter', Helvetica, Arial, sans-serif;
             color: var(--chanel-black);
@@ -26,9 +35,18 @@
         }
 
         /* === Typography === */
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .text-uppercase-tracking { text-transform: uppercase; letter-spacing: 0.15em; }
-        .fw-medium { font-weight: 500; }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .text-uppercase-tracking {
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .fw-medium {
+            font-weight: 500;
+        }
 
         /* === Navbar === */
         .navbar-top-row {
@@ -38,11 +56,13 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .navbar-brand-centered {
             text-align: center;
             padding: 20px 0;
             margin-bottom: 10px;
         }
+
         .brand-logo {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
@@ -52,6 +72,7 @@
             text-decoration: none;
             text-transform: uppercase;
         }
+
         .nav-links-row {
             display: flex;
             justify-content: center;
@@ -59,6 +80,7 @@
             padding-bottom: 1.5rem;
             flex-wrap: wrap;
         }
+
         .nav-link-custom {
             font-size: 0.75rem;
             font-weight: 600;
@@ -69,9 +91,12 @@
             position: relative;
             padding-bottom: 5px;
         }
-        .nav-link-custom:hover, .nav-link-custom.active {
+
+        .nav-link-custom:hover,
+        .nav-link-custom.active {
             color: #555;
         }
+
         .nav-link-custom.active::after {
             content: '';
             position: absolute;
@@ -81,6 +106,7 @@
             height: 1px;
             background-color: var(--chanel-black);
         }
+
         .icon-btn {
             background: none;
             border: none;
@@ -91,7 +117,7 @@
             text-decoration: none;
         }
 
-        /* === Language Selector === */
+        /* === Selectors === */
         .lang-btn {
             font-size: 0.75rem;
             font-weight: 600;
@@ -104,13 +130,15 @@
             cursor: pointer;
             text-decoration: none;
         }
+
         .lang-dropdown-menu {
             border: none;
             border-radius: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 10px 0;
             min-width: 120px;
         }
+
         .lang-item {
             font-size: 0.8rem;
             padding: 8px 20px;
@@ -119,17 +147,33 @@
             color: #333;
             transition: background 0.2s;
         }
+
         .lang-item:hover {
             background-color: #f5f5f5;
         }
-        /* Hide Google's Default Widget */
-        .goog-te-banner-frame { display: none !important; }
-        .goog-te-gadget { display: none !important; }
-        #google_translate_element { display: none !important; }
-        .skiptranslate { display: none !important; }
-        body > .skiptranslate { display: none !important; }
 
-        /* === Search Overlay (The "SEARCH" Screen) === */
+        /* Hide Google's Default Widget */
+        .goog-te-banner-frame {
+            display: none !important;
+        }
+
+        .goog-te-gadget {
+            display: none !important;
+        }
+
+        #google_translate_element {
+            display: none !important;
+        }
+
+        .skiptranslate {
+            display: none !important;
+        }
+
+        body>.skiptranslate {
+            display: none !important;
+        }
+
+        /* === Search Overlay & Voice Search Styles === */
         .search-overlay {
             position: fixed;
             top: 0;
@@ -144,15 +188,18 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+
         .search-overlay.active {
             display: flex;
             opacity: 1;
         }
+
         .search-header {
             text-align: center;
             position: relative;
             margin-bottom: 60px;
         }
+
         .search-title {
             font-family: 'Inter', sans-serif;
             font-size: 1.5rem;
@@ -161,6 +208,7 @@
             color: #555;
             font-weight: 400;
         }
+
         .btn-close-search {
             position: absolute;
             right: 0;
@@ -170,32 +218,114 @@
             background: none;
             border: none;
         }
+
         .search-input-wrapper {
             max-width: 800px;
             margin: 0 auto;
             width: 100%;
             border-bottom: 1px solid #000;
+            position: relative; /* Essential for microphone positioning */
+            display: flex;
+            align-items: center;
         }
+
         .search-input {
             width: 100%;
             border: none;
             font-size: 1.5rem;
             font-family: 'Playfair Display', serif;
             padding: 15px 0;
+            padding-right: 50px; /* Space for the microphone icon */
             outline: none;
             text-transform: uppercase;
         }
+
+        /* ✨ Mic Button Styles ✨ */
+        .btn-voice-search {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-voice-search:hover {
+            color: #000;
+        }
+
+        /* Animation when listening (Pulsing Red) */
+        .btn-voice-search.listening {
+            color: #d63031; /* Recording Red */
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-50%) scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ✨ Voice Status Text ✨ */
+        .voice-status-container {
+            height: 30px; /* Fixed height to prevent jumping */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        #voiceStatus {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #voiceStatus.active {
+            opacity: 1;
+        }
+
+        .status-listening {
+            color: #d63031; /* Red for listening */
+        }
+
+        .status-done {
+            color: #00b894; /* Green for success */
+        }
+
+        .status-error {
+            color: #e17055; /* Orange for error */
+        }
+
         .search-suggestions {
             max-width: 800px;
             margin: 40px auto;
             width: 100%;
         }
+
         .suggestion-title {
             font-size: 0.8rem;
             text-transform: uppercase;
             color: #999;
             margin-bottom: 20px;
         }
+
         .suggestion-item {
             display: block;
             font-size: 0.9rem;
@@ -216,16 +346,18 @@
             position: relative;
             transition: transform 10s ease;
         }
+
         .carousel-item.active .carousel-hero-item {
             transform: scale(1.02);
         }
+
         .carousel-hero-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.6) 100%);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -233,14 +365,17 @@
             padding-bottom: 80px;
             text-align: center;
             color: white;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
 
-        .carousel-control-prev, .carousel-control-next {
+        .carousel-control-prev,
+        .carousel-control-next {
             width: 8%;
             opacity: 1;
         }
-        .carousel-control-prev-icon, .carousel-control-next-icon {
+
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
             background-color: #000;
             border-radius: 50%;
             width: 3.5rem;
@@ -248,14 +383,16 @@
             background-size: 50%;
             background-position: center;
             filter: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
         }
+
         .carousel-control-prev:hover .carousel-control-prev-icon,
         .carousel-control-next:hover .carousel-control-next-icon {
             background-color: #333;
             transform: scale(1.1);
         }
+
         .hero-title {
             font-size: 3.5rem;
             text-transform: uppercase;
@@ -276,6 +413,7 @@
             align-items: center;
             width: 100%;
         }
+
         .welcome-subtitle {
             font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
@@ -284,6 +422,7 @@
             margin-bottom: 1.5rem;
             font-weight: 500;
         }
+
         .welcome-username {
             font-family: 'Inter', sans-serif;
             font-size: 3rem;
@@ -294,16 +433,19 @@
 
         /* === Product Grid === */
         .product-grid-section {
-            padding: 60px 40px;
+            padding: 30px 40px 60px; /* Reduced top padding */
         }
+
         .product-card {
             border: none;
             margin-bottom: 40px;
             transition: opacity 0.3s;
         }
+
         .product-card:hover {
             opacity: 0.8;
         }
+
         .product-card:hover .product-name {
             text-decoration: underline;
             text-decoration-thickness: 1px;
@@ -312,25 +454,28 @@
 
         .product-img-container {
             width: 100%;
-            padding-top: 100%; /* 1:1 Aspect Ratio */
+            padding-top: 100%;
+            /* 1:1 Aspect Ratio */
             position: relative;
             background-color: #f9f9f9;
             overflow: hidden;
             margin-bottom: 20px;
         }
-        /* ✨✨✨ CSS Update: Make video fit exactly like image ✨✨✨ */
-        .product-img, .product-video-preview {
+
+        .product-img,
+        .product-video-preview {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Crucial for videos too */
+            object-fit: cover;
         }
-        
+
         .product-info {
             text-align: center;
         }
+
         .product-name {
             font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
@@ -342,6 +487,7 @@
             text-decoration: none;
             display: block;
         }
+
         .product-price {
             font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
@@ -355,6 +501,7 @@
             padding: 60px 0;
             text-align: center;
         }
+
         .footer a {
             color: #999;
             text-decoration: none;
@@ -364,6 +511,158 @@
             margin: 0 15px;
         }
 
+        /* === NEW: FILTER UI === */
+        .filter-bar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0 25px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn-filter {
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: var(--chanel-black);
+        }
+        .btn-filter:hover { opacity: 0.6; }
+
+        .product-count {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Drawer Overlay */
+        .filter-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); z-index: 1040; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .filter-overlay.active { opacity: 1; pointer-events: auto; }
+
+        /* Filter Drawer */
+        .filter-drawer {
+            position: fixed; top: 0; right: -400px; width: 400px; height: 100%;
+            background: white; z-index: 1050; padding: 0; display: flex; flex-direction: column;
+            transition: right 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+        }
+        .filter-drawer.active { right: 0; }
+
+        .drawer-header {
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+        .drawer-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            color: black;
+        }
+        .btn-close-drawer { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: black; }
+
+        .drawer-content { flex: 1; overflow-y: auto; padding: 30px; }
+
+        .filter-section { margin-bottom: 40px; }
+        .fs-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* New: No Results Hint */
+        .no-results-hint {
+            display: none;
+            background: #f8d7da;
+            color: #842029;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        /* Custom Checkbox Styles */
+        .custom-check-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #333;
+        }
+        .custom-check-label input {
+            accent-color: black;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Price Slider Styles */
+        .price-slider-container { position: relative; height: 40px; margin-top: 25px; }
+
+        /* Updated Track Style for dynamic coloring */
+        .slider-track {
+            position: absolute; top: 50%; width: 100%; height: 3px;
+            background: #eee; transform: translateY(-50%); border-radius: 2px;
+            /* Default gradient, will be updated by JS */
+            background: linear-gradient(to right, #eee 0%, #eee 0%, #000 0%, #000 100%, #eee 100%, #eee 100%);
+        }
+
+        .range-input {
+            position: absolute; top: 50%; width: 100%; pointer-events: none;
+            -webkit-appearance: none; background: none; transform: translateY(-50%); margin: 0;
+        }
+        .range-input::-webkit-slider-thumb {
+            pointer-events: auto; -webkit-appearance: none;
+            width: 20px; height: 20px; background: black; border-radius: 50%;
+            cursor: pointer; box-shadow: 0 0 0 2px white; transition: transform 0.1s;
+        }
+        .range-input::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+        .price-values {
+            display: flex; justify-content: space-between; margin-top: 10px; gap: 10px;
+        }
+
+        /* Input fields for manual entry */
+        .price-input-field {
+            width: 100px;
+            padding: 5px 0;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #000;
+        }
+        .price-input-field:focus { outline: none; border-bottom: 1px solid #000; }
+
+        .drawer-footer { padding: 20px 30px; border-top: 1px solid #eee; }
+        .btn-apply {
+            width: 100%; background: black; color: white; border: none; padding: 16px;
+            text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;
+            font-weight: 600; transition: background 0.3s;
+        }
+        .btn-apply:hover { background: #333; }
+        .btn-apply:disabled { background: #ccc; cursor: not-allowed; }
+
         /* === Responsive Adjustments === */
         @media (max-width: 768px) {
             .brand-logo { font-size: 1.8rem; }
@@ -371,12 +670,20 @@
             .navbar-top-row { justify-content: space-between; }
             .hero-title { font-size: 2rem; }
             .welcome-username { font-size: 2rem; }
-            .product-grid-section { padding: 30px 15px; }
+            .product-grid-section { padding: 20px 15px; }
             .carousel-hero-item { height: 70vh; }
+
+            .filter-drawer { width: 100%; right: -100%; }
         }
     </style>
 </head>
 <body>
+    <!-- Pass JSON data to JS variable safely -->
+    <script>
+        const productData = {{ products_json|safe }};
+        const globalMin = {{ global_min_price }};
+        const globalMax = {{ global_max_price }};
+    </script>
 
     <div id="searchOverlay" class="search-overlay">
         <div class="search-header">
@@ -386,8 +693,17 @@
 
         <form action="{% url 'home' %}" method="GET" class="w-100">
             <div class="search-input-wrapper">
-                <input type="text" name="q" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off" value="{{ search_query|default:'' }}">
+                <input type="text" name="q" id="mainSearchInput" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off" value="{{ search_query|default:'' }}">
+
+                <button type="button" class="btn-voice-search" onclick="startVoiceRecognition()" title="Speak to Search">
+                    <i class="bi bi-mic"></i>
+                </button>
             </div>
+
+            <div class="voice-status-container">
+                <span id="voiceStatus"></span>
+            </div>
+
             <div class="text-center mt-4">
                  <button type="submit" class="btn btn-dark rounded-0 px-5 py-2 text-uppercase" style="letter-spacing: 2px;">View Results</button>
             </div>
@@ -395,11 +711,12 @@
 
         <div class="search-suggestions">
             <div class="suggestion-title">Suggestions</div>
-            <a href="{% url 'home' %}?q=CHANEL" class="suggestion-item">CHANEL</a>
-            <a href="{% url 'home' %}?q=DIOR" class="suggestion-item">DIOR</a>
-            <a href="{% url 'home' %}?q=London" class="suggestion-item">London</a>
-            <a href="{% url 'home' %}?q=Yifei Liu" class="suggestion-item">Yifei Liu</a>
-            <a href="{% url 'home' %}" class="suggestion-item">ALL PRODUCT</a>
+            <!-- ✨✨✨ Updated Suggestions per Request ✨✨✨ -->
+            <a href="{% url 'home' %}?q=%23Yifei+Liu" class="suggestion-item">#Yifei Liu</a>
+            <a href="{% url 'home' %}?q=COCO+CRUSH" class="suggestion-item">COCO CRUSH</a>
+            <a href="{% url 'home' %}?q=Van+Cleef+%26+Arpels" class="suggestion-item">Van Cleef & Arpels</a>
+            <a href="{% url 'home' %}?q=Diamond" class="suggestion-item">Diamond</a>
+            <a href="{% url 'home' %}?q=Rings" class="suggestion-item">Rings</a>
         </div>
     </div>
 
@@ -407,7 +724,7 @@
         <div class="navbar-top-row">
             <div id="google_translate_element"></div>
 
-            <div class="d-none d-md-block">
+            <div class="d-none d-md-flex gap-4">
                 <div class="dropdown">
                     <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         LANGUAGE
@@ -422,13 +739,29 @@
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
                     </ul>
                 </div>
+
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        TEXT SIZE
+                    </button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')">Standard</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')">Large</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('130%')">Extra Large</a></li>
+                    </ul>
+                </div>
             </div>
 
             <div class="d-flex gap-4">
                 <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
                 {% if user.is_authenticated %}
                     <a href="{% url 'logout' %}" class="icon-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
-                    <span class="text-uppercase small fw-bold mt-1 d-none d-md-inline" style="letter-spacing: 1px;">{{ user.username }}</span>
+                    <!-- CHANGED: Role-based navigation for username link -->
+                    {% if user.role == 'vendor' %}
+                        <a href="{% url 'vendor_dashboard' %}" class="text-uppercase small fw-bold mt-1 d-none d-md-inline text-decoration-none text-dark" style="letter-spacing: 1px; border-bottom: 1px solid black;">{{ user.username }}</a>
+                    {% else %}
+                        <a href="{% url 'user_profile' %}" class="text-uppercase small fw-bold mt-1 d-none d-md-inline text-decoration-none text-dark" style="letter-spacing: 1px; border-bottom: 1px solid black;">{{ user.username }}</a>
+                    {% endif %}
                 {% else %}
                     <a href="{% url 'login' %}" class="icon-btn" title="Login"><i class="bi bi-person"></i></a>
                 {% endif %}
@@ -436,12 +769,35 @@
 
                 <div class="dropdown d-md-none">
                      <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-globe"></i>
+                        <i class="bi bi-list"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+                    <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu shadow-lg border-0" style="min-width: 200px;">
+                        <li><h6 class="dropdown-header text-dark fw-bold">Navigate</h6></li>
+                        <li><a class="dropdown-item lang-item" href="{% url 'home' %}">Home</a></li>
+                        {% for cat in categories %}
+                            <li><a class="dropdown-item lang-item" href="{% url 'home' %}?category={{ cat.id }}">{{ cat.category_name }}</a></li>
+                        {% endfor %}
+
+                        {% if user.is_authenticated %}
+                            {% if user.role == 'vendor' %}
+                                <li><a class="dropdown-item lang-item fw-bold" href="{% url 'vendor_dashboard' %}">Dashboard</a></li>
+                            {% else %}
+                                <li><a class="dropdown-item lang-item fw-bold" href="{% url 'user_profile' %}">My Account</a></li>
+                            {% endif %}
+                        {% endif %}
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li><h6 class="dropdown-header text-muted">TEXT SIZE</h6></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')"><i class="bi bi-type me-2"></i> Standard </a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')"><i class="bi bi-type me-2"></i> Large </a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('130%')"><i class="bi bi-type me-2"></i> Extra Large </a></li>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header text-muted">LANGUAGE</h6></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
-                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')"繁體中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
@@ -510,6 +866,14 @@
 
     <section id="collection" class="product-grid-section">
         <div class="container">
+            <!-- Filter Bar (Inserted Here) -->
+            <div class="filter-bar-container">
+                <button class="btn-filter" onclick="toggleFilterDrawer()">
+                    <i class="bi bi-sliders2"></i> FILTERS
+                </button>
+                <span class="product-count">{{ products.count }} PRODUCTS</span>
+            </div>
+
             <div class="row g-4">
                 {% for product in products %}
                 <div class="col-6 col-md-3">
@@ -518,17 +882,17 @@
                             <div class="product-img-container">
                                 {% if product.images.first %}
                                     <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
-                                
+
                                 {% elif product.video %}
-                                    <video src="{{ product.video.url }}" 
-                                           class="product-video-preview" 
-                                           muted 
-                                           loop 
+                                    <video src="{{ product.video.url }}"
+                                           class="product-video-preview"
+                                           muted
+                                           loop
                                            playsinline
-                                           onmouseover="this.play()" 
+                                           onmouseover="this.play()"
                                            onmouseout="this.pause()">
                                     </video>
-                                    
+
                                 {% else %}
                                     <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">
                                         No Image
@@ -537,6 +901,7 @@
                             </div>
                         </a>
                         <div class="product-info">
+                            <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
                             <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
                             <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
                                 {% if product.stock <= 0 %}
@@ -558,6 +923,85 @@
             </div>
         </div>
     </section>
+
+    <!-- FILTER DRAWER OVERLAY -->
+    <div class="filter-overlay" id="filterOverlay" onclick="toggleFilterDrawer()"></div>
+
+    <!-- FILTER DRAWER CONTENT -->
+    <form action="{% url 'home' %}" method="GET" class="filter-drawer" id="filterDrawer">
+        <div class="drawer-header">
+            <span class="drawer-title">Filter by</span>
+            <button type="button" class="btn-close-drawer" onclick="toggleFilterDrawer()"><i class="bi bi-x"></i></button>
+        </div>
+
+        <div class="drawer-content">
+            <!-- Keep existing search/category params hidden -->
+            {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+            {% if current_category %}<input type="hidden" name="category" value="{{ current_category.id }}">{% endif %}
+
+            <!-- Sort By -->
+            <div class="filter-section">
+                <div class="fs-title">Sort by <i class="bi bi-chevron-down"></i></div>
+                <div class="fs-content">
+                    <label class="custom-check-label">
+                        <input type="radio" name="sort" value="price_desc" {% if current_sort == 'price_desc' %}checked{% endif %}> Highest to Lowest Price
+                    </label>
+                    <label class="custom-check-label">
+                        <input type="radio" name="sort" value="price_asc" {% if current_sort == 'price_asc' %}checked{% endif %}> Lowest to Highest Price
+                    </label>
+                    <label class="custom-check-label">
+                        <input type="radio" name="sort" value="novelty" {% if current_sort == 'novelty' %}checked{% endif %}> Novelty
+                    </label>
+                </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="filter-section">
+                <div class="fs-title">Price Range <i class="bi bi-chevron-down"></i></div>
+                <div class="fs-content">
+                    <div class="price-slider-container">
+                        <div class="slider-track" id="sliderTrack"></div>
+                        <!-- Provide defaults in case view context is missing -->
+                        <input type="range" class="range-input" min="{{ global_min_price|default:0 }}" max="{{ global_max_price|default:10000 }}" value="{{ current_min_price|default:0 }}" id="rangeMin" oninput="handleSliderChange()">
+                        <input type="range" class="range-input" min="{{ global_min_price|default:0 }}" max="{{ global_max_price|default:10000 }}" value="{{ current_max_price|default:10000 }}" id="rangeMax" oninput="handleSliderChange()">
+                    </div>
+                    <div class="price-values">
+                        <div class="d-flex align-items-center gap-1">
+                            $ <input type="number" id="inputMinDisplay" class="price-input-field" value="{{ current_min_price|default:0 }}" min="{{ global_min_price|default:0 }}" max="{{ global_max_price|default:10000 }}" onchange="handleInputChange()">
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            $ <input type="number" id="inputMaxDisplay" class="price-input-field" value="{{ current_max_price|default:10000 }}" min="{{ global_min_price|default:0 }}" max="{{ global_max_price|default:10000 }}" onchange="handleInputChange()">
+                        </div>
+                    </div>
+
+                    <div id="priceHint" class="no-results-hint">No products found in this price range.</div>
+
+                    <!-- Hidden inputs for form submission -->
+                    <input type="hidden" name="min_price" id="inputMinPrice" value="{{ current_min_price|default:0 }}">
+                    <input type="hidden" name="max_price" id="inputMaxPrice" value="{{ current_max_price|default:10000 }}">
+                </div>
+            </div>
+
+            <!-- Brand -->
+            <div class="filter-section">
+                <div class="fs-title">Brand <i class="bi bi-chevron-down"></i></div>
+                <div class="fs-content">
+                    {% for brand in filter_brands %}
+                    <label class="custom-check-label">
+                        <input type="checkbox" name="brand" value="{{ brand }}" class="brand-checkbox" onchange="filterPreview()" {% if brand in selected_brands %}checked{% endif %}> {{ brand }}
+                    </label>
+                    {% empty %}
+                    <div class="text-muted small">No brands available filter.</div>
+                    {% endfor %}
+                    <div id="brandHint" class="no-results-hint">No products found for selected brand(s).</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="drawer-footer">
+            <button type="submit" class="btn-apply" id="applyFilterBtn">View Products</button>
+        </div>
+    </form>
 
     <footer class="footer">
         <div class="container">
@@ -586,6 +1030,144 @@
             }
         }
 
+        // === Filter Drawer Logic ===
+        function toggleFilterDrawer() {
+            document.getElementById('filterDrawer').classList.toggle('active');
+            document.getElementById('filterOverlay').classList.toggle('active');
+            // Trigger visual update on open to ensure slider track is correct
+            updateSliderVisuals();
+            filterPreview();
+        }
+
+        // === Price Slider & Input Logic ===
+        const rangeMin = document.getElementById('rangeMin');
+        const rangeMax = document.getElementById('rangeMax');
+        const inputMinDisplay = document.getElementById('inputMinDisplay');
+        const inputMaxDisplay = document.getElementById('inputMaxDisplay');
+        const hiddenMin = document.getElementById('inputMinPrice');
+        const hiddenMax = document.getElementById('inputMaxPrice');
+        const sliderTrack = document.getElementById('sliderTrack');
+        const minGap = 0; // Allow 0 gap since we handle inputs
+
+        // Sync Slider -> Inputs
+        function handleSliderChange() {
+            let val1 = parseInt(rangeMin.value);
+            let val2 = parseInt(rangeMax.value);
+
+            if (val1 > val2) {
+                // Prevent crossover
+                const tmp = val1; val1 = val2; val2 = tmp;
+                // visually swap controls logic would be complex, simpler to just clamp
+                if (event.target === rangeMin) { rangeMin.value = val2; }
+                else { rangeMax.value = val1; }
+            }
+
+            inputMinDisplay.value = val1;
+            inputMaxDisplay.value = val2;
+            hiddenMin.value = val1;
+            hiddenMax.value = val2;
+
+            updateSliderVisuals();
+            filterPreview();
+        }
+
+        // Sync Inputs -> Slider
+        function handleInputChange() {
+            let val1 = parseInt(inputMinDisplay.value);
+            let val2 = parseInt(inputMaxDisplay.value);
+
+            // Constrain
+            if (val1 < globalMin) val1 = globalMin;
+            if (val2 > globalMax) val2 = globalMax;
+            if (val1 > val2) {
+                // If user typed min > max, swap them
+                const tmp = val1; val1 = val2; val2 = tmp;
+            }
+
+            inputMinDisplay.value = val1;
+            inputMaxDisplay.value = val2;
+
+            rangeMin.value = val1;
+            rangeMax.value = val2;
+            hiddenMin.value = val1;
+            hiddenMax.value = val2;
+
+            updateSliderVisuals();
+            filterPreview();
+        }
+
+        // Visual Gradient Logic (Black Center, Gray Edges)
+        function updateSliderVisuals() {
+            if(!rangeMin || !rangeMax) return;
+            const minVal = parseInt(rangeMin.value);
+            const maxVal = parseInt(rangeMax.value);
+            const totalRange = globalMax - globalMin;
+
+            // Calculate percentages for gradient
+            const percent1 = ((minVal - globalMin) / totalRange) * 100;
+            const percent2 = ((maxVal - globalMin) / totalRange) * 100;
+
+            // Gradient: Gray | Black | Gray
+            sliderTrack.style.background = `linear-gradient(to right, #eee ${percent1}%, #000 ${percent1}%, #000 ${percent2}%, #eee ${percent2}%)`;
+        }
+
+        // === Real-time Filtering Logic ===
+        function filterPreview() {
+            if(typeof productData === 'undefined') return;
+
+            // Get current criteria
+            const currentMin = parseFloat(hiddenMin.value);
+            const currentMax = parseFloat(hiddenMax.value);
+
+            // Get checked brands
+            const checkedBrands = Array.from(document.querySelectorAll('.brand-checkbox:checked')).map(cb => cb.value);
+
+            // Filter logic
+            const filtered = productData.filter(p => {
+                const matchesPrice = (p.price >= currentMin && p.price <= currentMax);
+                const matchesBrand = (checkedBrands.length === 0) || checkedBrands.includes(p.brand);
+                return matchesPrice && matchesBrand;
+            });
+
+            const count = filtered.length;
+            const btn = document.getElementById('applyFilterBtn');
+            const priceHint = document.getElementById('priceHint');
+            const brandHint = document.getElementById('brandHint');
+
+            // Update UI
+            if (count > 0) {
+                btn.innerText = `View ${count} Products`;
+                btn.disabled = false;
+                priceHint.style.display = 'none';
+                brandHint.style.display = 'none';
+            } else {
+                btn.innerText = `No Products Found`;
+                btn.disabled = true;
+
+                // Determine hint type
+                // Check if price alone yields 0
+                const priceOnlyCount = productData.filter(p => p.price >= currentMin && p.price <= currentMax).length;
+
+                if (priceOnlyCount === 0) {
+                    priceHint.style.display = 'block';
+                    brandHint.style.display = 'none';
+                } else {
+                    // Price is okay, so Brand must be the issue
+                    priceHint.style.display = 'none';
+                    brandHint.style.display = 'block';
+                }
+            }
+        }
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            if(rangeMin && rangeMax) {
+                rangeMin.addEventListener('mouseover', function(){ rangeMin.style.zIndex = "2"; rangeMax.style.zIndex = "1"; });
+                rangeMax.addEventListener('mouseover', function(){ rangeMax.style.zIndex = "2"; rangeMin.style.zIndex = "1"; });
+                updateSliderVisuals();
+            }
+        });
+
         /* ✨ Google Translate Custom Integration ✨ */
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -600,16 +1182,95 @@
             location.reload();
         }
 
-        // Initialize script
         const script = document.createElement('script');
         script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
         document.body.appendChild(script);
+
+        function setFontSize(size) {
+            document.documentElement.style.fontSize = size;
+            localStorage.setItem('userFontSize', size);
+        }
+
+        /* ================= ✨✨✨ VOICE SEARCH LOGIC (With Visual Feedback & Language Mapping) ✨✨✨ ================= */
+        function startVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Voice search is not supported in this browser. Please use Chrome, Edge, or Safari.");
+                return;
+            }
+
+            const recognition = new webkitSpeechRecognition();
+            const micBtn = document.querySelector('.btn-voice-search');
+            const statusSpan = document.getElementById('voiceStatus');
+            const searchInput = document.getElementById('mainSearchInput');
+
+            // 2. ✨ Intelligent Language Detection ✨
+            // We check the cookie 'googtrans' to see what language the user has selected.
+            const cookieMatch = document.cookie.match(/googtrans=\/en\/([a-zA-Z-]+)/);
+            let targetLang = 'en-US'; // Default to English
+            let displayLangName = 'English';
+
+            if (cookieMatch && cookieMatch[1]) {
+                const code = cookieMatch[1];
+
+                // === MACAU SPECIAL: Map "Traditional Chinese" (zh-TW) to "Cantonese" (yue-Hant-HK) ===
+                if (code === 'zh-TW') {
+                    targetLang = 'yue-Hant-HK';
+                    displayLangName = 'Cantonese';
+                }
+                else if (code === 'zh-CN') { targetLang = 'zh-CN'; displayLangName = 'Mandarin'; }
+                else if (code === 'ja') { targetLang = 'ja-JP'; displayLangName = 'Japanese'; }
+                else if (code === 'es') { targetLang = 'es-ES'; displayLangName = 'Spanish'; }
+                else if (code === 'fr') { targetLang = 'fr-FR'; displayLangName = 'French'; }
+                else if (code === 'de') { targetLang = 'de-DE'; displayLangName = 'German'; }
+            }
+
+            recognition.lang = targetLang;
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.start();
+
+            // ✨ UI Updates for States ✨
+            recognition.onstart = function() {
+                micBtn.classList.add('listening');
+                statusSpan.innerHTML = `<i class="bi bi-record-circle-fill me-2"></i> Listening (${displayLangName})...`;
+                statusSpan.className = "status-listening active"; // Red style
+                searchInput.placeholder = "Listening...";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+            };
+
+            recognition.onend = function() {
+                micBtn.classList.remove('listening');
+
+                // Show "Stopped" message briefly
+                statusSpan.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Recording Stopped`;
+                statusSpan.className = "status-done active"; // Green style
+
+                // Fade out after 2 seconds
+                setTimeout(() => {
+                    statusSpan.classList.remove('active');
+                    searchInput.placeholder = "SEARCH...";
+                }, 2000);
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech error", event.error);
+                micBtn.classList.remove('listening');
+
+                statusSpan.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2"></i> Error: Try Again`;
+                statusSpan.className = "status-error active"; // Orange style
+            };
+        }
     </script>
 
     <script>
         (function() {
             const HEARTBEAT_URL = "{% url 'heartbeat' %}";
-            const INTERVAL = 20000; // 20 seconds (Must be less than SESSION_COOKIE_AGE which is 60)
+            const INTERVAL = 20000;
 
             function sendHeartbeat() {
                 fetch(HEARTBEAT_URL, {
@@ -620,7 +1281,6 @@
                 }).catch(err => console.log('Heartbeat failed:', err));
             }
 
-            // Start heartbeat loop immediately
             setInterval(sendHeartbeat, INTERVAL);
         })();
     </script>

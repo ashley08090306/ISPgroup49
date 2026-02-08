@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Management - Vendor Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .sidebar { background-color: #000; color: #fff; min-height: 100vh; display: flex; flex-direction: column; border-right: 1px solid #222; }
+        .sidebar a { color: #999; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; border-left: 4px solid transparent; }
+        .sidebar a:hover { color: #fff; background-color: #1a1a1a; }
+        .sidebar a.active { color: #fff; background-color: #111; border-left: 4px solid #fff; }
+        .user-profile-section { background-color: #1a1a1a; margin-top: auto; padding: 20px; border-top: 1px solid #333; }
+        .user-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .user-info-text h6 { color: #fff; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+        .user-info-text small { color: #aaa; font-size: 0.8rem; display: block; margin-top: 2px; }
+        .btn-logout { margin-top: 15px; color: #ff6b6b; font-size: 0.85rem; display: flex; align-items: center; text-decoration: none; transition: all 0.2s; padding: 5px 0; }
+        .btn-logout:hover { color: #ff4c4c; transform: translateX(3px); }
+        .card { border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .review-card { background: white; padding: 25px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #eee; transition: box-shadow 0.2s; }
+        .review-card:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .stars { color: #ffc107; font-size: 0.9rem; }
+        .product-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; background-color: #f9f9f9; }
+
+        /* Filter Styles */
+        .filter-toggle-btn { background: none; border: 1px solid #ccc; padding: 6px 15px; font-size: 0.9rem; border-radius: 4px; color: #555; transition: all 0.2s; }
+        .filter-toggle-btn:hover, .filter-toggle-btn[aria-expanded="true"] { background: #333; color: white; border-color: #333; }
+        .filter-panel { background: white; border: 1px solid #eee; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .form-label { font-size: 0.8rem; text-transform: uppercase; font-weight: 600; color: #666; margin-bottom: 5px; }
+
+        /* ✨ Pagination Styles ✨ */
+        .custom-pagination-link {
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+            border-radius: 4px !important;
+            margin: 0 3px;
+            color: #333;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .custom-pagination-link:hover {
+            background-color: #f0f0f0;
+            color: #000;
+            border-color: #ccc;
+        }
+        .page-item.active .custom-pagination-link {
+            background-color: #000; /* Black Active Background */
+            color: #fff; /* White Text */
+            border-color: #000;
+        }
+        .page-item.disabled .custom-pagination-link {
+            color: #ccc;
+            background-color: #f9f9f9;
+            pointer-events: none;
+        }
+
+        /* ✨ Jump Control Styles (White Background) ✨ */
+        .jump-container {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .jump-input {
+            border: none;
+            border-bottom: 2px solid #eee;
+            width: 40px;
+            text-align: center;
+            font-weight: bold;
+            outline: none;
+            margin-right: 8px;
+            transition: border-color 0.2s;
+        }
+        .jump-input:focus { border-bottom-color: #000; }
+        /* Remove spinners */
+        .jump-input::-webkit-outer-spin-button, .jump-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .jump-btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: opacity 0.2s;
+        }
+        .jump-btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar (Consistent) -->
+            <div class="col-md-2 sidebar p-0">
+                <div class="p-4 text-center border-bottom border-secondary">
+                    <h5 class="mb-0 fw-bold tracking-wider">VENDOR PORTAL</h5>
+                </div>
+                <nav class="mt-3">
+                    <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <a href="{% url 'vendor_reviews' %}" class="active"><i class="bi bi-chat-left-text me-2"></i> Review Management</a>
+                    <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
+                    <a href="{% url 'vendor_products' %}"><i class="bi bi-box-seam me-2"></i> My Products</a>
+                    <a href="{% url 'vendor_orders' %}"><i class="bi bi-receipt me-2"></i> Orders</a>
+                    <a href="{% url 'home' %}" target="_blank">
+                        <i class="bi bi-shop me-2"></i> View Shop
+                        <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 0.7em;"></i>
+                    </a>
+                </nav>
+                <div class="user-profile-section">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">{{ request.user.username|slice:":1"|upper }}</div>
+                        <div class="user-info-text" style="overflow: hidden;">
+                            <h6 class="text-truncate" title="{{ request.user.username }}">{{ request.user.username }}</h6>
+                            <small class="text-truncate" title="{{ request.user.email }}">{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'logout' %}" class="btn-logout"><i class="bi bi-box-arrow-right me-2"></i> Log out</a>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="col-md-10 p-5">
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h2>Review Management</h2>
+                        <button class="filter-toggle-btn mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false">
+                            <i class="bi bi-funnel"></i> Filters
+                        </button>
+                    </div>
+                    <div class="text-end">
+                        <h4 class="mb-0 fw-bold">{{ total_reviews_count }}</h4>
+                        <div class="small text-muted text-uppercase">Total Reviews</div>
+                    </div>
+                </div>
+
+                <!-- Filter Panel -->
+                <div class="collapse {% if current_product_id or current_status != 'all' or current_sort != 'newest' %}show{% endif %}" id="filterPanel">
+                    <div class="filter-panel">
+                        <form method="GET" action="{% url 'vendor_reviews' %}">
+                            <div class="row align-items-end g-3">
+                                <!-- Sort -->
+                                <div class="col-md-3">
+                                    <label class="form-label">Sort By</label>
+                                    <select name="sort" class="form-select form-select-sm">
+                                        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                                        <option value="rating_desc" {% if current_sort == 'rating_desc' %}selected{% endif %}>Highest Rating</option>
+                                        <option value="rating_asc" {% if current_sort == 'rating_asc' %}selected{% endif %}>Lowest Rating</option>
+                                    </select>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="col-md-3">
+                                    <label class="form-label">Reply Status</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Reviews</option>
+                                        <option value="unreplied" {% if current_status == 'unreplied' %}selected{% endif %}>Unreplied Only</option>
+                                        <option value="replied" {% if current_status == 'replied' %}selected{% endif %}>Replied Only</option>
+                                    </select>
+                                </div>
+
+                                <!-- Product ID Search -->
+                                <div class="col-md-3">
+                                    <label class="form-label">Search Product ID</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-muted">#</span>
+                                        <input type="number" name="product_id" class="form-control" placeholder="Product ID" value="{{ current_product_id }}">
+                                    </div>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div class="col-md-3">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-sm btn-dark flex-grow-1">Apply Filters</button>
+                                        <a href="{% url 'vendor_reviews' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success border-0 shadow-sm">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% for review in reviews %}
+                <div class="review-card">
+                    <div class="d-flex gap-3">
+                        <!-- Product Thumb -->
+                        <div class="flex-shrink-0">
+                            {% if review.product.images.first %}
+                                <img src="{{ review.product.images.first.image.url }}" class="product-thumb">
+                            {% else %}
+                                <div class="product-thumb d-flex align-items-center justify-content-center text-muted small">No Img</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Review Content -->
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1 fw-bold">{{ review.product.product_name }} <span class="text-muted fw-normal small ms-2">(ID: {{ review.product.id }})</span></h6>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-person"></i> {{ review.user.username }}
+                                        <span class="mx-2">•</span>
+                                        {{ review.created_at|date:"M d, Y" }}
+                                    </div>
+                                </div>
+                                <div class="stars">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}<i class="bi bi-star-fill"></i>{% else %}<i class="bi bi-star"></i>{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <p class="mb-3 text-secondary">{{ review.comment }}</p>
+
+                            {% if review.vendor_reply %}
+                                <div class="bg-light p-3 rounded border-start border-4 border-dark mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="text-uppercase fw-bold text-dark">Response from Store</small>
+                                        <small class="text-muted">{{ review.replied_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <div class="text-dark fst-italic small">"{{ review.vendor_reply }}"</div>
+                                </div>
+                                <button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{review.id}}">
+                                    Edit Reply
+                                </button>
+                            {% else %}
+                                <button class="btn btn-sm btn-dark" type="button" data-bs-toggle="collapse" data-bs-target="#replyForm{{review.id}}">
+                                    <i class="bi bi-reply-fill me-1"></i> Reply to Customer
+                                </button>
+                            {% endif %}
+
+                            <div class="collapse mt-3" id="replyForm{{review.id}}">
+                                <form method="POST" action="{% url 'vendor_reply_review' review.id %}">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        <textarea name="reply_text" class="form-control" rows="3" placeholder="Write a response to the customer..." required>{{ review.vendor_reply|default:'' }}</textarea>
+                                    </div>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#replyForm{{review.id}}">Cancel</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Post Reply</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-chat-square-dots text-muted fs-1 mb-3 d-block"></i>
+                        <p class="text-muted">No reviews found matching your filters.</p>
+                        <a href="{% url 'vendor_reviews' %}" class="btn btn-sm btn-outline-dark mt-2">Clear Filters</a>
+                    </div>
+                {% endfor %}
+
+                <!-- ✨✨✨ Pagination & Jump Section ✨✨✨ -->
+                {% if reviews.has_other_pages %}
+                <div class="d-flex flex-column align-items-center mt-5">
+
+                    <!-- 1. Page Numbers (Square Style) -->
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center m-0">
+                            <!-- Prev -->
+                            {% if reviews.has_previous %}
+                                <li class="page-item">
+                                    <a class="custom-pagination-link" href="?page={{ reviews.previous_page_number }}&sort={{ current_sort }}&status={{ current_status }}&product_id={{ current_product_id }}">&laquo;</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="custom-pagination-link">&laquo;</span></li>
+                            {% endif %}
+
+                            <!-- Numbers Loop -->
+                            {% for i in custom_page_range %}
+                                {% if i == reviews.paginator.ELLIPSIS %}
+                                    <li class="page-item disabled"><span class="custom-pagination-link bg-transparent border-0">...</span></li>
+                                {% else %}
+                                    <li class="page-item {% if i == reviews.number %}active{% endif %}">
+                                        <a class="custom-pagination-link" href="?page={{ i }}&sort={{ current_sort }}&status={{ current_status }}&product_id={{ current_product_id }}">{{ i }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- Next -->
+                            {% if reviews.has_next %}
+                                <li class="page-item">
+                                    <a class="custom-pagination-link" href="?page={{ reviews.next_page_number }}&sort={{ current_sort }}&status={{ current_status }}&product_id={{ current_product_id }}">&raquo;</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="custom-pagination-link">&raquo;</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+
+                    <!-- 2. Jump Control (White Background) -->
+                    <div class="jump-container mt-3">
+                        <input type="number" id="jumpPageInput" class="jump-input"
+                               value="{{ reviews.number }}" min="1" max="{{ reviews.paginator.num_pages }}">
+                        <span class="text-muted small">/ {{ reviews.paginator.num_pages }}</span>
+                        <button onclick="jumpToPage()" class="jump-btn">跳转</button>
+                    </div>
+
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function jumpToPage() {
+            const pageNum = document.getElementById('jumpPageInput').value;
+            const maxPage = {{ reviews.paginator.num_pages|default:1 }};
+
+            if (pageNum && pageNum > 0 && pageNum <= maxPage) {
+                // Preserve existing URL params
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('page', pageNum);
+                window.location.search = urlParams.toString();
+            } else {
+                alert("Please enter a valid page number between 1 and " + maxPage);
+            }
+        }
+    </script>
+    {% include 'heartbeat.html' %}
+</body>
+</html>

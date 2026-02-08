@@ -1,3 +1,4 @@
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -9,52 +10,60 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <script>
+        const savedSize = localStorage.getItem('userFontSize');
+        if (savedSize) {
+            document.documentElement.style.fontSize = savedSize;
+        }
+    </script>
+
     <style>
         :root {
             --chanel-black: #000000;
             --chanel-white: #ffffff;
             --gold-accent: #d4af37;
         }
+
         body {
             font-family: 'Inter', sans-serif;
             color: var(--chanel-black);
             background-color: var(--chanel-white);
-            padding-top: 100px; /* Space for Navbar */
-            /* Prevent Google Translate from shifting body */
+            padding-top: 0;
             top: 0 !important;
             position: static !important;
         }
 
-        /* Reusing Navbar Styles */
-        .navbar-top-row {
-            padding: 0 30px;
-            height: 50px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: fixed;
+        /* === Sticky Header Styles === */
+        .site-header {
+            position: sticky;
             top: 0;
             left: 0;
             width: 100%;
-            background: transparent;
-            z-index: 1002;
-            pointer-events: none;
+            z-index: 1020;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
-        .navbar-top-row > div {
-            pointer-events: auto;
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            position: relative;
+            min-height: 70px;
         }
 
         .navbar-brand-centered {
-            position: fixed;
-            top: 0;
+            position: absolute;
             left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 0;
-            z-index: 1001;
-            background: white;
-            width: 100%;
-            text-align: center;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1030;
+            white-space: nowrap;
         }
+
         .brand-logo {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
@@ -64,6 +73,7 @@
             text-decoration: none;
             text-transform: uppercase;
         }
+
         .icon-btn {
             background: none;
             border: none;
@@ -72,10 +82,9 @@
             color: var(--chanel-black);
             cursor: pointer;
             text-decoration: none;
-            position: relative;
         }
 
-        /* === Language Selector === */
+        /* Lang & Text Selectors */
         .lang-btn {
             font-size: 0.75rem;
             font-weight: 600;
@@ -88,6 +97,7 @@
             cursor: pointer;
             text-decoration: none;
         }
+
         .lang-dropdown-menu {
             border: none;
             border-radius: 0;
@@ -95,295 +105,180 @@
             padding: 10px 0;
             min-width: 120px;
         }
+
         .lang-item {
             font-size: 0.8rem;
             padding: 8px 20px;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: #333;
-            transition: background 0.2s;
         }
-        .lang-item:hover {
-            background-color: #f5f5f5;
-        }
-        /* Hide Google's Default Widget */
-        .goog-te-banner-frame { display: none !important; }
-        .goog-te-gadget { display: none !important; }
-        #google_translate_element { display: none !important; }
-        .skiptranslate { display: none !important; }
+        .lang-item:hover { background-color: #f5f5f5; }
+
+        /* Hide Google Translate */
+        .goog-te-banner-frame, .goog-te-gadget, #google_translate_element, .skiptranslate { display: none !important; }
         body > .skiptranslate { display: none !important; }
 
-        /* === Search Overlay Styles === */
+        /* Search Overlay */
         .search-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background-color: white;
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            padding: 40px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background-color: white; z-index: 2000; display: none;
+            flex-direction: column; padding: 40px; opacity: 0; transition: opacity 0.3s ease;
         }
-        .search-overlay.active {
-            display: flex;
-            opacity: 1;
-        }
-        .search-header {
-            text-align: center;
-            position: relative;
-            margin-bottom: 60px;
-        }
-        .search-title {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: #555;
-            font-weight: 400;
-        }
-        .btn-close-search {
-            position: absolute;
-            right: 0;
-            top: 0;
-            font-size: 1.5rem;
-            cursor: pointer;
-            background: none;
-            border: none;
-        }
-        .search-input-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-            border-bottom: 1px solid #000;
-        }
-        .search-input {
-            width: 100%;
-            border: none;
-            font-size: 1.5rem;
-            font-family: 'Playfair Display', serif;
-            padding: 15px 0;
-            outline: none;
-            text-transform: uppercase;
-        }
-        .search-suggestions {
-            max-width: 800px;
-            margin: 40px auto;
-            width: 100%;
-        }
-        .suggestion-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            color: #999;
-            margin-bottom: 20px;
-        }
-        .suggestion-item {
-            display: block;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: black;
-            text-decoration: none;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
+        .search-overlay.active { display: flex; opacity: 1; }
+        .search-header { text-align: center; position: relative; margin-bottom: 60px; }
+        .search-title { font-family: 'Inter', sans-serif; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.2em; color: #555; }
+        .btn-close-search { position: absolute; right: 0; top: 0; font-size: 1.5rem; cursor: pointer; background: none; border: none; }
+        .search-input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; border-bottom: 1px solid #000; }
+        .search-input { width: 100%; border: none; font-size: 1.5rem; font-family: 'Playfair Display', serif; padding: 15px 0; outline: none; text-transform: uppercase; }
 
-        /* Product Layout */
-        .detail-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        .image-gallery {
-            position: relative;
-        }
-        
-        /* ✨✨✨ Updated Media Styles ✨✨✨ */
-        .media-wrapper {
-            width: 100%;
-            height: auto;
-            position: relative;
-            background-color: #f9f9f9;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        .main-media-item {
-            width: 100%;
-            display: block;
-            object-fit: cover;
-        }
-        .thumbnail-container {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-        }
-        /* New Wrapper for thumbnails to handle clicks reliably */
-        .thumbnail-wrapper {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
-        .thumbnail {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-            border: 1px solid transparent; /* Prepare for border */
-        }
-        .thumbnail:hover, .thumbnail.active {
-            opacity: 1;
-            border: 1px solid black;
-        }
-        /* Video Icon Overlay for Thumbnail */
-        .video-icon-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 1.5rem;
-            pointer-events: none;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
+        /* === Product Detail === */
+        .detail-container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .image-gallery { position: relative; }
+        .media-wrapper { width: 100%; height: auto; position: relative; background-color: #f9f9f9; margin-bottom: 20px; overflow: hidden; }
+        .main-media-item { width: 100%; display: block; object-fit: cover; }
+        .thumbnail-container { display: flex; gap: 10px; overflow-x: auto; }
+        .thumbnail-wrapper { position: relative; width: 80px; height: 80px; flex-shrink: 0; cursor: pointer; }
+        .thumbnail { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.2s; border: 1px solid transparent; }
+        .thumbnail:hover, .thumbnail.active { opacity: 1; border: 1px solid black; }
+        .video-icon-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.5rem; pointer-events: none; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
-        /* Arrows for Gallery */
         .gallery-nav-btn {
-            position: absolute;
-            top: 45%;
-            transform: translateY(-50%);
-            background-color: rgba(255, 255, 255, 0.7);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            z-index: 10;
+            position: absolute; top: 45%; transform: translateY(-50%);
+            background-color: rgba(255, 255, 255, 0.7); border: none; border-radius: 50%;
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; z-index: 10;
         }
-        .gallery-nav-btn:hover {
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-        }
+        .gallery-nav-btn:hover { background-color: rgba(0, 0, 0, 0.8); color: white; }
         .gallery-nav-btn.prev { left: 10px; }
         .gallery-nav-btn.next { right: 10px; }
 
-        /* Product Info */
         .product-info-col { padding-left: 50px; }
-        .product-brand {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        .product-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-        .product-price {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            font-weight: 500;
-        }
-        .product-description {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #444;
-            margin-bottom: 40px;
-        }
+        .product-brand { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 10px; }
+        .product-title { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 20px; line-height: 1.2; }
+        .product-price { font-size: 1.2rem; margin-bottom: 30px; font-weight: 500; }
+        .product-description { font-size: 0.95rem; line-height: 1.6; color: #444; margin-bottom: 40px; }
+
         .btn-add-cart {
-            width: 100%;
-            background-color: black;
-            color: white;
-            padding: 15px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            border: none;
-            font-weight: 600;
+            width: 100%; background-color: black; color: white; padding: 15px 0;
+            text-transform: uppercase; letter-spacing: 0.15em; border: none; font-weight: 600;
             transition: all 0.3s;
         }
         .btn-add-cart:hover { background-color: #333; }
-        .meta-info {
-            margin-top: 30px;
-            font-size: 0.85rem;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-        .meta-item { margin-bottom: 5px; }
+        .meta-info { margin-top: 30px; font-size: 0.85rem; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
 
+        /* === REVIEW SECTION (APP STORE STYLE - HORIZONTAL SCROLL) === */
+        .reviews-container { margin-top: 80px; padding-top: 40px; border-top: 1px solid #eee; }
+        .review-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 30px; }
 
-        /* Related Products */
-        .related-section {
-            margin-top: 80px;
-            padding-top: 40px;
-            border-top: 1px solid #eee;
+        /* Left: Big Score */
+        .review-score-box { flex: 0 0 150px; text-align: center; }
+        .review-score-num { font-size: 4rem; font-weight: 700; line-height: 1; letter-spacing: -2px; }
+        .review-score-text { font-size: 0.9rem; color: #666; font-weight: 600; margin-top: 5px; text-transform: uppercase; }
+
+        /* Right: Bars */
+        .review-bars-box { flex: 1; max-width: 500px; }
+        .review-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .star-label { font-size: 0.75rem; color: #666; width: 40px; text-align: right; display: flex; justify-content: flex-end; align-items: center; }
+        .star-label i { font-size: 0.6rem; margin-left: 2px; }
+        .progress-track { flex: 1; height: 6px; background-color: #eee; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #333; border-radius: 3px; }
+
+        /* Write Review Button */
+        .write-review-btn-container { text-align: right; margin-top: 20px; width: 100%; }
+        .btn-write-review { background: none; border: 1px solid black; padding: 10px 25px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em; transition: all 0.2s; }
+        .btn-write-review:hover { background: black; color: white; }
+
+        /* Horizontal Review Scroller (New) */
+        .review-scroller {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding-bottom: 20px;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            scroll-snap-type: x mandatory;
+            margin-right: -20px; /* Bleed to right edge on mobile */
+            padding-right: 20px;
         }
-        .section-title {
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            margin-bottom: 40px;
-            font-size: 1.2rem;
-        }
-        .related-card img {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            margin-bottom: 10px;
-        }
-        .related-name {
-            display: block;
-            text-align: center;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
-            color: black;
-            text-decoration: none;
+        /* Hide scrollbar */
+        .review-scroller::-webkit-scrollbar { display: none; }
+        .review-scroller { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .review-card-horizontal {
+            min-width: 320px;
+            max-width: 320px;
+            background: #f5f5f7; /* App Store Grey */
+            padding: 25px;
+            border-radius: 16px;
+            scroll-snap-align: start;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        /* Animation Fly Image */
-        .fly-img {
-            position: fixed;
-            z-index: 9999;
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 50%;
-            pointer-events: none;
-            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-            opacity: 0.8;
+        .review-user-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .reviewer-name { font-weight: 700; font-size: 0.9rem; color: #1d1d1f; }
+        .review-date { font-size: 0.8rem; color: #86868b; }
+        .review-stars { color: #d4af37; font-size: 0.8rem; margin-bottom: 12px; }
+        .review-text { font-size: 0.95rem; line-height: 1.5; color: #1d1d1f; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+
+        .review-media-grid { display: flex; gap: 8px; margin-top: auto; }
+        .review-media-item { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
+
+        /* Vendor Reply */
+        .vendor-reply-box {
+            background-color: #fff; border-radius: 8px; padding: 10px; margin-top: 15px; border-left: 3px solid #000;
         }
+        .vendor-reply-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .vendor-reply-text { font-size: 0.85rem; color: #333; line-height: 1.4; font-style: italic; }
+
+        /* "See All" Button */
+        .see-all-btn { font-size: 1rem; color: #007aff; cursor: pointer; border: none; background: none; font-weight: 500; float: right; margin-left: 10px; }
+        .see-all-btn:hover { text-decoration: underline; }
+
+        /* Modal Styles */
+        .star-rating-input { direction: rtl; display: inline-flex; }
+        .star-rating-input input { display: none; }
+        .star-rating-input label { font-size: 2rem; color: #ddd; cursor: pointer; transition: color 0.2s; padding: 0 5px; }
+        .star-rating-input input:checked ~ label { color: #d4af37; }
+        .star-rating-input label:hover, .star-rating-input label:hover ~ label { color: #d4af37; }
+
+        /* Upload Previews */
+        .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 6px; cursor: pointer; background: #fafafa; }
+        .upload-area:hover { border-color: #333; }
+        .preview-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .preview-wrapper { position: relative; width: 80px; height: 80px; }
+        .preview-img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+        .btn-rm-preview { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; border: none; font-size: 12px; line-height: 1; cursor: pointer; }
+
+        /* Related Section */
+        .related-section { margin-top: 60px; padding-top: 40px; border-top: 1px solid #eee; }
+        .section-title { text-align: center; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 40px; font-size: 1.2rem; }
+        .related-card img { width: 100%; height: 300px; object-fit: cover; margin-bottom: 10px; }
+        .related-name { display: block; text-align: center; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em; color: black; text-decoration: none; }
+
+        /* Fly Animation */
+        .fly-img { position: fixed; z-index: 9999; width: 100px; height: 100px; object-fit: cover; border-radius: 50%; pointer-events: none; transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1); opacity: 0.8; }
 
         @media (max-width: 768px) {
-            .navbar-brand-centered { position: static; transform: none; padding: 0; margin-bottom: 0; }
-            .navbar-top-row { position: static; height: auto; padding: 10px 20px; justify-content: space-between; }
-            body { padding-top: 0; }
+            .navbar-container { justify-content: space-between; }
+            .navbar-brand-centered { position: static; transform: none; margin: 0 auto; order: 2; }
             .product-info-col { padding-left: 0; margin-top: 30px; }
-            .product-title { font-size: 2rem; }
-            .gallery-nav-btn { width: 30px; height: 30px; font-size: 0.8rem; }
-            .review-form-container { padding: 20px; }
+            .review-header { flex-direction: column; align-items: center; text-align: center; }
+            .review-bars-box { width: 100%; }
+            .write-review-btn-container { text-align: center; }
+            .review-card-horizontal { min-width: 280px; max-width: 280px; }
         }
     </style>
 </head>
 <body>
+    <!-- Search Overlay -->
     <div id="searchOverlay" class="search-overlay">
         <div class="search-header">
             <h2 class="search-title">SEARCH</h2>
             <button class="btn-close-search" onclick="toggleSearch()"><i class="bi bi-x-lg"></i></button>
         </div>
-
         <form action="{% url 'home' %}" method="GET" class="w-100">
             <div class="search-input-wrapper">
                 <input type="text" name="q" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off" value="{{ request.GET.q|default:'' }}">
@@ -392,110 +287,100 @@
                  <button type="submit" class="btn btn-dark rounded-0 px-5 py-2 text-uppercase" style="letter-spacing: 2px;">View Results</button>
             </div>
         </form>
-
-        <div class="search-suggestions">
-            <div class="suggestion-title">Suggestions</div>
-            <a href="{% url 'home' %}?q=CHANEL" class="suggestion-item">CHANEL</a>
-            <a href="{% url 'home' %}?q=DIOR" class="suggestion-item">DIOR</a>
-            <a href="{% url 'home' %}?q=London" class="suggestion-item">London</a>
-            <a href="{% url 'home' %}?q=Yifei Liu" class="suggestion-item">Yifei Liu</a>
-            <a href="{% url 'home' %}" class="suggestion-item">ALL PRODUCT</a>
-        </div>
     </div>
 
-    <div class="navbar-top-row">
+    <!-- Header -->
+    <header class="site-header">
         <div id="google_translate_element"></div>
-
-        <div class="d-none d-md-block">
-             <div class="dropdown">
-                <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    LANGUAGE
-                </button>
-                <ul class="dropdown-menu lang-dropdown-menu">
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
-                    <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
-                </ul>
+        <div class="navbar-container">
+            <div class="d-none d-md-flex gap-4" style="order: 1; flex: 1;">
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">LANGUAGE</button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">TEXT SIZE</button>
+                    <ul class="dropdown-menu lang-dropdown-menu">
+                       <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')">Standard</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')">Large</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('130%')">Extra Large</a></li>
+                </div>
+            </div>
+            <div class="navbar-brand-centered">
+                <a href="{% url 'home' %}" class="brand-logo">RAFAYEL & GRACE</a>
+            </div>
+            <div class="d-flex gap-4 justify-content-end" style="order: 3; flex: 1;">
+                <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'logout' %}" class="icon-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="icon-btn" title="Login"><i class="bi bi-person"></i></a>
+                {% endif %}
+                <a href="{% url 'cart_view' %}" class="icon-btn" id="navBagIcon"><i class="bi bi-bag"></i></a>
             </div>
         </div>
+    </header>
 
-        <div class="d-flex gap-4">
-            <button class="icon-btn" onclick="toggleSearch()"><i class="bi bi-search"></i></button>
-            {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="icon-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
-                <span class="text-uppercase small fw-bold mt-1 d-none d-md-inline" style="letter-spacing: 1px;">{{ user.username }}</span>
-            {% else %}
-                <a href="{% url 'login' %}" class="icon-btn" title="Login"><i class="bi bi-person"></i></a>
-            {% endif %}
-            <a href="{% url 'cart_view' %}" class="icon-btn" id="navBagIcon"><i class="bi bi-bag"></i></a>
-
-            <div class="dropdown d-md-none">
-                <button class="icon-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                   <i class="bi bi-globe"></i>
-               </button>
-               <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
-                   <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
-               </ul>
-           </div>
-        </div>
-    </div>
-    <div class="navbar-brand-centered">
-        <a href="{% url 'home' %}" class="brand-logo">RAFAYEL & GRACE</a>
-    </div>
-
+    <!-- Product Detail -->
     <div class="detail-container">
+
+        <!-- Error Alert -->
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert" style="border-left: 5px solid red;">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Oops! Something went wrong.</strong><br>
+                    <span class="small">{{ error }}</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         <nav aria-label="breadcrumb" class="mb-4 d-none d-md-block">
             <ol class="breadcrumb text-uppercase small" style="font-size: 0.7rem; letter-spacing: 0.1em;">
                 <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none text-muted">Home</a></li>
                 {% if product.category %}
                 <li class="breadcrumb-item"><a href="{% url 'home' %}?category={{ product.category.id }}" class="text-decoration-none text-muted">{{ product.category.category_name }}</a></li>
                 {% endif %}
-                <li class="breadcrumb-item active" aria-current="page">{{ product.product_name }}</li>
+                <li class="breadcrumb-item active">{{ product.product_name }}</li>
             </ol>
         </nav>
 
         <div class="row">
+            <!-- Left: Gallery -->
             <div class="col-md-7">
                 <div class="image-gallery">
-                    
                     <div class="media-wrapper">
                         <img id="mainImage" src="" class="main-media-item" alt="Product Image" style="display: none;">
-                        
                         <video id="mainVideo" class="main-media-item" controls style="display: none;">
                             <source id="mainVideoSource" src="" type="video/mp4">
-                            Your browser does not support the video tag.
                         </video>
-
                         <button class="gallery-nav-btn prev" onclick="prevMedia()"><i class="bi bi-chevron-left"></i></button>
                         <button class="gallery-nav-btn next" onclick="nextMedia()"><i class="bi bi-chevron-right"></i></button>
                     </div>
-
                     <div class="thumbnail-container">
                         {% for img in product.images.all %}
                             <div class="thumbnail-wrapper" onclick="selectMedia({{ forloop.counter0 }})">
                                 <img src="{{ img.image.url }}" class="thumbnail" id="thumb-{{ forloop.counter0 }}">
                             </div>
                         {% endfor %}
-
                         {% if product.video %}
                             <div class="thumbnail-wrapper" onclick="selectMedia({{ product.images.count }})">
-                                <div class="thumbnail d-flex align-items-center justify-content-center bg-dark text-white" id="thumb-{{ product.images.count }}">
-                                    </div>
+                                <div class="thumbnail d-flex align-items-center justify-content-center bg-dark text-white" id="thumb-{{ product.images.count }}"></div>
                                 <div class="video-icon-overlay"><i class="bi bi-play-circle-fill"></i></div>
                             </div>
                         {% endif %}
                     </div>
-                    
                     {% if not product.images.exists and not product.video %}
                         <div class="main-media-item d-flex align-items-center justify-content-center text-muted" style="height: 400px; background: #f9f9f9;">
                             No Image Available
@@ -504,46 +389,153 @@
                 </div>
             </div>
 
+            <!-- Right: Info -->
             <div class="col-md-5 product-info-col">
-                {% if product.brand %}
-                    <div class="product-brand">{{ product.brand }}</div>
-                {% endif %}
-
-                <h1 class="product-title">{{ product.product_name }}</h1>
-
-                <div class="product-price">USD {{ product.price }}</div>
-
-                <div class="product-description">
-                    {{ product.description|linebreaks }}
-                </div>
-
-                {% if product.stock > 0 and product.available %}
-                    <div class="d-grid">
-                        {% if user.is_authenticated %}
-                            {% if user.role == 'vendor' %}
-                                <button type="button" class="btn-add-cart" disabled style="background-color: #666; border-color: #666; cursor: not-allowed;">
-                                    Vendor Account: Purchase Disabled
-                                </button>
-                            {% else %}
-                                <button type="button" class="btn-add-cart" id="addToBagBtn" onclick="addToBag({{ product.id }})">Add to Bag</button>
-                            {% endif %}
-                        {% else %}
-                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn-add-cart d-block text-decoration-none text-center" style="display: flex; align-items: center; justify-content: center;">Sign In to Purchase</a>
-                        {% endif %}
-                    </div>
-                {% else %}
-                    <button class="btn-add-cart" style="background-color: #ccc; cursor: not-allowed;" disabled>Sold Out</button>
-                {% endif %}
-
-                <div class="meta-info">
-                    {% if product.materials %}
-                    <div class="meta-item"><strong>Materials:</strong> {{ product.materials }}</div>
+                <div>
+                    <!-- UPDATED: Display Tags instead of Brand here -->
+                    {% if product.tags.exists %}
+                        <div class="product-brand">
+                            {% for tag in product.tags.all %}
+                                {{ tag.tag_name }}&nbsp;
+                            {% endfor %}
+                        </div>
                     {% endif %}
-                    <div class="meta-item"><strong>Ref:</strong> #{{ product.id }}</div>
+
+                    <h1 class="product-title">{{ product.product_name }}</h1>
+                    <div class="product-price">USD {{ product.price }}</div>
+                    <div class="product-description">{{ product.description|linebreaks }}</div>
+
+                    {% if product.stock > 0 and product.available %}
+                        <div class="d-grid">
+                            {% if user.is_authenticated %}
+                                {% if user.role == 'vendor' %}
+                                    <button class="btn-add-cart" disabled style="background-color: #666; cursor: not-allowed;">Vendor Account: Purchase Disabled</button>
+                                {% else %}
+                                    <button class="btn-add-cart" id="addToBagBtn" onclick="addToBag({{ product.id }})">Add to Bag</button>
+                                {% endif %}
+                            {% else %}
+                                <a href="{% url 'login' %}?next={{ request.path }}" class="btn-add-cart text-decoration-none text-center d-flex align-items-center justify-content-center">Sign In to Purchase</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <button class="btn-add-cart" style="background-color: #ccc; cursor: not-allowed;" disabled>Sold Out</button>
+                    {% endif %}
+
+                    <div class="meta-info">
+                        <!-- UPDATED: Brand Field Added -->
+                        {% if product.brand %}
+                        <div class="meta-item"><strong>Brand:</strong> {{ product.brand }}</div>
+                        {% endif %}
+
+                        {% if product.materials %}
+                        <div class="meta-item"><strong>Materials:</strong> {{ product.materials }}</div>
+                        {% endif %}
+                        <div class="meta-item"><strong>Ref:</strong> #{{ product.id }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- REVIEWS SECTION (APP STORE STYLE) -->
+        <div class="reviews-container">
+            <div class="d-flex justify-content-between align-items-baseline mb-5" style="border-bottom: 1px solid black; padding-bottom: 15px;">
+                <h3 class="section-title text-start mb-0" style="margin-bottom: 0 !important;">Ratings & Reviews</h3>
+                <!-- See All Button Logic: Show if any reviews exist -->
+                {% if reviews %}
+                    <!-- IMPORTANT: Requires 'all_reviews' url in urls.py -->
+                    <a href="{% url 'all_reviews' product.id %}" class="see-all-btn">See All</a>
+                {% endif %}
+            </div>
+
+            <div class="review-header">
+                <!-- Big Score -->
+                <div class="review-score-box">
+                    <div class="review-score-num">{{ avg_rating }}</div>
+                    <div class="review-score-text">out of 5</div>
+                    <div class="text-muted small mt-1">{{ total_reviews }} Ratings</div>
+                </div>
+
+                <!-- Bars -->
+                <div class="review-bars-box">
+                    {% for dist in distribution %}
+                    <div class="review-bar-row">
+                        <div class="star-label">
+                            {% if dist.star == 5 %}★★★★★
+                            {% elif dist.star == 4 %}★★★★
+                            {% elif dist.star == 3 %}★★★
+                            {% elif dist.star == 2 %}★★
+                            {% else %}★
+                            {% endif %}
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: {{ dist.percent }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Write Button: HIDE for Vendors -->
+                <div class="write-review-btn-container">
+                    {% if user.is_authenticated %}
+                        {% if user.role != 'vendor' %}
+                            <button type="button" class="btn-write-review" data-bs-toggle="modal" data-bs-target="#writeReviewModal">
+                                <i class="bi bi-pencil-square me-2"></i>Write a Review
+                            </button>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn-write-review text-decoration-none">
+                            Login to Review
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Review Scroller (Horizontal App Store Style) -->
+            <div class="review-scroller">
+                {% for review in reviews|slice:":5" %}
+                <div class="review-card-horizontal">
+                    <div>
+                        <div class="review-user-row">
+                            <span class="reviewer-name">{{ review.user.username }}</span>
+                            <span class="review-date">{{ review.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="review-stars">
+                            {% for i in review.filled_stars %}<i class="bi bi-star-fill"></i>{% endfor %}
+                            {% for i in review.empty_stars %}<i class="bi bi-star"></i>{% endfor %}
+                        </div>
+                        <div class="review-text">{{ review.comment }}</div>
+
+                        <!-- ✨ Vendor Reply Display ✨ -->
+                        {% if review.vendor_reply %}
+                        <div class="vendor-reply-box">
+                            <div class="vendor-reply-title">
+                                <span>Response from Store</span>
+                                <span>{{ review.replied_at|date:"M d" }}</span>
+                            </div>
+                            <div class="vendor-reply-text">"{{ review.vendor_reply }}"</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if review.media.exists %}
+                    <div class="review-media-grid">
+                        {% for media in review.media.all|slice:":3" %}
+                            {% if media.media_type == 'image' %}
+                                <img src="{{ media.file.url }}" class="review-media-item" onclick="window.open(this.src)">
+                            {% elif media.media_type == 'video' %}
+                                <div class="review-media-item d-flex align-items-center justify-content-center bg-black text-white" style="font-size:10px;">VIDEO</div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-5 text-muted w-100">No reviews yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Related Products -->
         {% if related_products %}
         <div class="related-section">
             <h3 class="section-title">You May Also Like</h3>
@@ -567,8 +559,62 @@
         {% endif %}
     </div>
 
-    <footer class="footer mt-5">
-        <div class="container text-center">
+    <!-- WRITE REVIEW MODAL -->
+    <div class="modal fade" id="writeReviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title font-serif text-uppercase tracking-wider">Write a Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form method="POST" enctype="multipart/form-data" id="reviewForm">
+                        {% csrf_token %}
+
+                        <!-- Star Rating -->
+                        <div class="text-center mb-4">
+                            <div class="star-rating-input">
+                                <!-- Added 'required' to radio buttons -->
+                                <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="5 stars">★</label>
+                                <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars">★</label>
+                                <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars">★</label>
+                                <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars">★</label>
+                                <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star">★</label>
+                            </div>
+                            <div class="small text-muted mt-1">Tap to Rate</div>
+                        </div>
+
+                        <!-- Comment -->
+                        <div class="mb-4">
+                            <textarea name="comment" class="form-control bg-light border-0" rows="4" placeholder="Share your thoughts about this product..." required></textarea>
+                        </div>
+
+                        <!-- Media Upload -->
+                        <div class="mb-4">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Add Photos (Optional)</label>
+                            <input type="file" name="review_images" id="reviewImages" class="d-none" multiple accept="image/*">
+                            <div class="upload-area" onclick="document.getElementById('reviewImages').click()">
+                                <i class="bi bi-camera fs-4 text-secondary"></i>
+                                <div class="small mt-1">Add Photos</div>
+                            </div>
+                            <div class="preview-grid" id="imagePreviewContainer"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small text-uppercase fw-bold text-muted">Add Video (Optional, max 1)</label>
+                            <input type="file" name="review_video" id="reviewVideo" class="form-control" accept="video/*">
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-5 bg-black text-white py-5 text-center">
+        <div class="container">
             <div class="text-uppercase small" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 1px;">
                 &copy; 2026 RAFAYEL & GRACE. All Rights Reserved.
             </div>
@@ -578,32 +624,19 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // ✨✨✨ Updated: Mixed Media List (Images + Video) ✨✨✨
+        // === Media Gallery Logic ===
         const mediaList = [
-            // 1. Add Images
             {% for img in product.images.all %}
-                {
-                    type: 'image',
-                    url: "{{ img.image.url }}"
-                },
+                { type: 'image', url: "{{ img.image.url }}" },
             {% endfor %}
-
-            // 2. Add Video if exists
             {% if product.video %}
-                {
-                    type: 'video',
-                    url: "{{ product.video.url }}"
-                },
+                { type: 'video', url: "{{ product.video.url }}" },
             {% endif %}
         ];
-
         let currentIndex = 0;
 
-        // Initialize Display
         document.addEventListener('DOMContentLoaded', function() {
-            if (mediaList.length > 0) {
-                updateDisplay();
-            }
+            if (mediaList.length > 0) updateDisplay();
         });
 
         function updateDisplay() {
@@ -612,156 +645,132 @@
             const mainVideo = document.getElementById('mainVideo');
             const mainVideoSrc = document.getElementById('mainVideoSource');
 
-            // 1. Control Main Display
             if (currentItem.type === 'image') {
-                // Show Image, Hide & Pause Video
-                mainVideo.pause();
-                mainVideo.style.display = 'none';
-                
-                mainImg.src = currentItem.url;
-                mainImg.style.display = 'block';
+                mainVideo.pause(); mainVideo.style.display = 'none';
+                mainImg.src = currentItem.url; mainImg.style.display = 'block';
             } else if (currentItem.type === 'video') {
-                // Hide Image, Show Video
                 mainImg.style.display = 'none';
-                
-                // Only reload if source changes to prevent flickering
                 if(mainVideoSrc.getAttribute('src') !== currentItem.url) {
-                    mainVideoSrc.src = currentItem.url;
-                    mainVideo.load();
+                    mainVideoSrc.src = currentItem.url; mainVideo.load();
                 }
                 mainVideo.style.display = 'block';
             }
-
-            // 2. Update Thumbnails Active State
-            // We use id="thumb-index" to find the img inside the wrapper
-            const allThumbs = document.querySelectorAll('.thumbnail');
-            allThumbs.forEach(thumb => thumb.classList.remove('active'));
-
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
             const activeThumb = document.getElementById('thumb-' + currentIndex);
-            if (activeThumb) {
-                activeThumb.classList.add('active');
-                // Optional: Scroll thumbnail into view
-                activeThumb.parentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
+            if (activeThumb) activeThumb.classList.add('active');
         }
+        function prevMedia() { if (mediaList.length <= 1) return; currentIndex = (currentIndex === 0) ? mediaList.length - 1 : currentIndex - 1; updateDisplay(); }
+        function nextMedia() { if (mediaList.length <= 1) return; currentIndex = (currentIndex === mediaList.length - 1) ? 0 : currentIndex + 1; updateDisplay(); }
+        function selectMedia(index) { currentIndex = index; updateDisplay(); }
 
-        function prevMedia() {
-            if (mediaList.length <= 1) return;
-            currentIndex = (currentIndex === 0) ? mediaList.length - 1 : currentIndex - 1;
-            updateDisplay();
-        }
-
-        function nextMedia() {
-            if (mediaList.length <= 1) return;
-            currentIndex = (currentIndex === mediaList.length - 1) ? 0 : currentIndex + 1;
-            updateDisplay();
-        }
-
-        function selectMedia(index) {
-            currentIndex = index;
-            updateDisplay();
-        }
-
-        // ✨ Flying Animation & Add to Cart Logic (Updated for Video) ✨
+        // === Add to Bag Logic ===
         function addToBag(productId) {
-            const btn = document.getElementById('addToBagBtn');
             const bagIcon = document.getElementById('navBagIcon');
-            
-            // Animation Source: Default to mainImage
             let sourceEl = document.getElementById('mainImage');
-            
-            // If mainImage is hidden (watching video), use the first thumbnail
             if (sourceEl.style.display === 'none') {
-                const firstThumb = document.querySelector('.thumbnail');
-                if (firstThumb) sourceEl = firstThumb;
+                 const thumbs = document.querySelectorAll('.thumbnail');
+                 if(thumbs.length > 0) sourceEl = thumbs[0];
             }
+            if (!bagIcon) return;
 
-            if (!bagIcon || !sourceEl) return;
-
-            // 1. Send AJAX Request
             fetch("{% url 'add_to_cart' %}", {
                 method: "POST",
-                headers: {
-                    "X-CSRFToken": "{{ csrf_token }}",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
+                headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded" },
                 body: "product_id=" + productId
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    // 2. Perform Flying Animation
-                    animateFly(sourceEl, bagIcon);
-                } else if (data.status === 'error') {
-                    // Safety alert for errors (e.g., Vendor trying to buy)
-                    alert(data.message);
+                    // Fly Animation
+                    const rect = sourceEl.getBoundingClientRect();
+                    const targetRect = bagIcon.getBoundingClientRect();
+                    const fly = sourceEl.cloneNode();
+                    fly.classList.add('fly-img');
+                    fly.style.top = rect.top + 'px'; fly.style.left = rect.left + 'px';
+                    fly.style.width = rect.width + 'px'; fly.style.height = rect.height + 'px';
+                    document.body.appendChild(fly);
+                    setTimeout(() => {
+                        fly.style.top = targetRect.top + 'px'; fly.style.left = targetRect.left + 'px';
+                        fly.style.width = '20px'; fly.style.height = '20px'; fly.style.opacity = '0';
+                    }, 10);
+                    setTimeout(() => fly.remove(), 800);
+                } else { alert(data.message); }
+            });
+        }
+
+        // === Review Image Preview Logic (DataTransfer) ===
+        const reviewImageInput = document.getElementById('reviewImages');
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        const dt = new DataTransfer();
+
+        if(reviewImageInput) {
+            reviewImageInput.addEventListener('change', function(e) {
+                for(let i=0; i<this.files.length; i++) {
+                    dt.items.add(this.files[i]);
                 }
-            })
-            .catch(error => console.error('Error:', error));
+                this.files = dt.files;
+                renderPreviews();
+            });
         }
 
-        function animateFly(sourceEl, targetEl) {
-            // Get coordinates
-            const sourceRect = sourceEl.getBoundingClientRect();
-            const targetRect = targetEl.getBoundingClientRect();
-
-            // Create a clone of the image
-            const flyImg = sourceEl.cloneNode();
-            flyImg.classList.add('fly-img');
-
-            // Set initial position
-            flyImg.style.top = sourceRect.top + 'px';
-            flyImg.style.left = sourceRect.left + 'px';
-            flyImg.style.width = sourceRect.width + 'px';
-            flyImg.style.height = sourceRect.height + 'px';
-
-            document.body.appendChild(flyImg);
-
-            // Trigger animation (use setTimeout to allow DOM render)
-            setTimeout(() => {
-                flyImg.style.top = targetRect.top + 'px';
-                flyImg.style.left = targetRect.left + 'px';
-                flyImg.style.width = '20px'; // Shrink
-                flyImg.style.height = '20px';
-                flyImg.style.opacity = '0';
-            }, 10);
-
-            // Clean up
-            setTimeout(() => {
-                flyImg.remove();
-            }, 800); // Match CSS transition duration
-        }
-
-        // ✨ Toggle Search Function (Same as Home) ✨
-        function toggleSearch() {
-            const overlay = document.getElementById('searchOverlay');
-            overlay.classList.toggle('active');
-
-            if (overlay.classList.contains('active')) {
-                const input = overlay.querySelector('.search-input');
-                setTimeout(() => input.focus(), 100);
+        function renderPreviews() {
+            previewContainer.innerHTML = '';
+            for(let i=0; i<dt.files.length; i++) {
+                const file = dt.files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'preview-wrapper';
+                    div.innerHTML = `<img src="${e.target.result}" class="preview-img">
+                                     <button type="button" class="btn-rm-preview" onclick="removeReviewImage(${i})">×</button>`;
+                    previewContainer.appendChild(div);
+                }
+                reader.readAsDataURL(file);
             }
         }
 
-        /* ✨ Google Translate Custom Integration ✨ */
+        window.removeReviewImage = function(index) {
+            const newDt = new DataTransfer();
+            for(let i=0; i<dt.files.length; i++) {
+                if(i !== index) newDt.items.add(dt.files[i]);
+            }
+            dt.items.clear();
+            for(let i=0; i<newDt.files.length; i++) dt.items.add(newDt.files[i]);
+            reviewImageInput.files = dt.files;
+            renderPreviews();
+        }
+
+        // === Toggle All Reviews (App Store Style) ===
+        function toggleAllReviews() {
+            const hiddenReviews = document.querySelectorAll('.review-card.hidden');
+            const btn = document.getElementById('seeAllBtn');
+
+            // Just reveal them. In a real App Store it opens a new page,
+            // but expanding is smoother for a web view without new routing.
+            hiddenReviews.forEach(card => {
+                card.classList.remove('hidden');
+            });
+
+            // Hide the button after expanding
+            if(btn) btn.style.display = 'none';
+        }
+
+        // Debug
+        document.getElementById('reviewForm').addEventListener('submit', function() {
+            console.log('Submitting review...');
+        });
+
+        // === Search & UI Utils ===
+        function toggleSearch() {
+            document.getElementById('searchOverlay').classList.toggle('active');
+        }
         function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es',
-                autoDisplay: false,
-            }, 'google_translate_element');
+            new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es', autoDisplay: false}, 'google_translate_element');
         }
-
-        function setLanguage(lang) {
-            document.cookie = "googtrans=/en/" + lang + "; path=/";
-            location.reload();
-        }
-
-        // Initialize script
-        const script = document.createElement('script');
-        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-        document.body.appendChild(script);
+        function setLanguage(lang) { document.cookie = "googtrans=/en/" + lang + "; path=/"; location.reload(); }
+        function setFontSize(size) { document.documentElement.style.fontSize = size; localStorage.setItem('userFontSize', size); }
+        const s = document.createElement('script'); s.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"; document.body.appendChild(s);
     </script>
-{% include 'heartbeat.html' %}
+    {% include 'heartbeat.html' %}
 </body>
 </html>

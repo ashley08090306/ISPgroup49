@@ -3,45 +3,75 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from core.models import User
-from .models import ShippingAddress, Product, Category, Tag, Order, ProductImage, ShopProfile, Review, ReviewMedia, Cart, CartItem
+# ✨ 核心修改：引入 OrderItem
+from .models import ShippingAddress, Product, Category, Tag, Order, OrderItem, ProductImage, ShopProfile, Review, ReviewMedia, Cart, CartItem
 from django.db.models import Sum, Q, F, Avg, Min, Max
 from django.contrib.auth import authenticate
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
 from django.db import OperationalError
-import json, re # ✨ 必须导入 re 模块用于正则匹配
+import json, re
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib import messages
-from django.utils import timezone
+from django.utils import timezone # ✨ 核心修改：必须引入
 
-# ==================== 首页与搜索 ====================
+# ==================== 首页与搜索 (多语言支持 + 停用词优化版) ====================
 
 def home(request):
     base_qs = Product.objects.filter(available=True, stock__gt=0)
 
-    # ✨✨✨ 恢复高级搜索逻辑 (Universal Dynamic Search) ✨✨✨
+    # ✨✨✨ 获取搜索关键词 ✨✨✨
     search_query = request.GET.get('q', '').strip()
 
+    # 🌟 NEW: 用于数据库查询的关键词
+    search_query_for_db = search_query
+
     if search_query:
-        keywords = search_query.split()
+        # ==================== 核心修改1：智能翻译 ====================
+        try:
+            from deep_translator import GoogleTranslator
+            # 自动检测 -> 翻译为英文
+            search_query_for_db = GoogleTranslator(source='auto', target='en').translate(search_query)
+            print(f"🌍 [Search] Input: '{search_query}' -> Translated: '{search_query_for_db}'")
+        except Exception as e:
+            print(f"⚠️ [Search Error] Translation failed: {e}")
+            search_query_for_db = search_query
+
+        # ==================== 核心修改2：去除无意义的冠词 (Stop Words) ====================
+        # 解决 "太阳" -> "The sun" 导致搜索失败的问题
+        # 我们只保留核心名词，去除 the, a, an 等
+        stop_words = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for'}
+
+        # 拆分关键词
+        raw_keywords = search_query_for_db.split()
+
+        # 过滤关键词：保留非停用词，或者如果是CJK字符(不用管停用词)
+        keywords = []
+        for k in raw_keywords:
+            # 如果是纯英文且在停用词表中，跳过
+            if re.match(r'^[a-zA-Z]+$', k) and k.lower() in stop_words:
+                continue
+            keywords.append(k)
+
+        # 如果过滤完没词了(比如用户就搜了"The")，就回退到原始列表
+        if not keywords:
+            keywords = raw_keywords
+
+        # ==================== 构建查询 ====================
         query_filter = Q()
 
         for keyword in keywords:
-            # 预处理：去掉标签的 # 号，获取长度
             tag_keyword = keyword.lstrip('#')
             k_len = len(keyword)
 
-            # 1. 判断是否包含中文/日文 (CJK 字符)
+            # 判断是否为中日韩字符
             is_cjk = bool(re.search(r'[\u4e00-\u9fa5\u3040-\u30ff]', keyword))
-
-            # 初始化本次循环的查询
             or_lookup = Q()
 
             if is_cjk:
-                # 🌏【亚洲语言模式】(无空格，信息密度高)
+                # CJK 宽泛匹配
                 if k_len == 1:
-                    # 单字策略：严格。不搜描述和材质细节，防止"金"匹配到"金属扣"
                     or_lookup = (
                         Q(product_name__icontains=keyword) |
                         Q(brand__icontains=keyword) |
@@ -49,7 +79,6 @@ def home(request):
                         Q(tags__tag_name__icontains=tag_keyword)
                     )
                 else:
-                    # 多字策略：宽松。全搜
                     or_lookup = (
                         Q(product_name__icontains=keyword) |
                         Q(brand__icontains=keyword) |
@@ -59,27 +88,25 @@ def home(request):
                         Q(tags__tag_name__icontains=tag_keyword)
                     )
             else:
-                # 🌍【拉丁语言模式】(有空格，需单词边界 \b)
-                # re.escape 确保用户输入 + * ? 等符号时不报错
+                # 英文匹配逻辑
                 pattern = r'\b' + re.escape(keyword)
 
                 if k_len <= 2:
-                    # 极短词策略 (如 "Ho", "Co")：极严。只搜产品名。
-                    # 防止 "Co" 匹配 "Tiffany & Co." 或 "Cotton"
+                    # 极短词 (如 "Go")：严格匹配单词边界
                     or_lookup = Q(product_name__iregex=pattern)
-
                 elif k_len < 5:
-                    # 短词策略 (如 "Ring", "Gold")：中等。
-                    # 搜重要字段，跳过 Description (描述文字太多容易误判)
+                    # 短词 (如 "Sun", "Ring")：匹配名字、品牌、分类、标签
+                    # ✨ 修复：增加了 description 匹配，防止漏网之鱼，但在排序时产品名优先
                     or_lookup = (
                         Q(product_name__iregex=pattern) |
                         Q(brand__iregex=pattern) |
                         Q(category__category_name__iregex=pattern) |
+                        Q(description__icontains=keyword) | # 放宽这里，允许匹配描述
                         Q(materials__iregex=pattern) |
-                        Q(tags__tag_name__icontains=tag_keyword) # Tag 保持模糊匹配即可
+                        Q(tags__tag_name__icontains=tag_keyword)
                     )
                 else:
-                    # 长词策略 (如 "Diamond")：宽松。全搜。
+                    # 长词：全面宽泛匹配
                     or_lookup = (
                         Q(product_name__iregex=pattern) |
                         Q(brand__iregex=pattern) |
@@ -88,14 +115,8 @@ def home(request):
                         Q(materials__iregex=pattern) |
                         Q(tags__tag_name__icontains=tag_keyword)
                     )
-
-            # AND 逻辑：必须同时满足所有关键词
             query_filter &= or_lookup
-
-        # 应用筛选并去重
         base_qs = base_qs.filter(query_filter).distinct()
-
-    # --- 以下逻辑保持不变 ---
 
     category_id = request.GET.get('category')
     current_category = None
@@ -184,7 +205,6 @@ def home(request):
 
 @login_required
 def user_profile(request):
-    # Vendor should not access user profile, redirect to dashboard
     if getattr(request.user, 'role', '') == 'vendor':
         return redirect('vendor_dashboard')
 
@@ -199,48 +219,39 @@ def user_profile(request):
     elif active_tab == 'address':
         context['addresses'] = ShippingAddress.objects.filter(user=user).order_by('-is_default', 'id')
 
+    # ✨✨✨ 核心修改：适配一单多品结构 ✨✨✨
     elif active_tab == 'orders':
         order_id = request.GET.get('order_id')
         if order_id:
             order_obj = get_object_or_404(Order, id=order_id, user=user)
-            order_obj.total_price = order_obj.product.price * order_obj.quantity
 
             shipping_addr = ShippingAddress.objects.filter(user=user, is_default=True).first()
             if not shipping_addr:
                 shipping_addr = ShippingAddress.objects.filter(user=user).first()
 
             context['order_detail'] = order_obj
+            # 通过 items 反向查询所有子订单项
+            context['order_items'] = order_obj.items.select_related('product').all()
             context['shipping_address'] = shipping_addr
         else:
-            # ✨ New Filtering & Pagination Logic ✨
-            orders_qs = Order.objects.filter(user=user)
+            orders_qs = Order.objects.filter(user=user).prefetch_related('items__product').order_by('-order_date')
 
-            # 1. Filter by Status
             status_filter = request.GET.get('status', 'all')
             if status_filter != 'all':
-                # Case-insensitive match for status
                 orders_qs = orders_qs.filter(status__iexact=status_filter)
 
-            # 2. Sort by Date
             sort_by = request.GET.get('sort', 'newest')
             if sort_by == 'oldest':
                 orders_qs = orders_qs.order_by('order_date')
             else:
                 orders_qs = orders_qs.order_by('-order_date')
 
-            # 3. Total Count
             total_orders_count = orders_qs.count()
 
-            # 4. Pagination (5 items per page)
             paginator = Paginator(orders_qs, 5)
             page_number = request.GET.get('page')
             page_obj = paginator.get_page(page_number)
 
-            # Calculate total price for display
-            for o in page_obj:
-                o.total_price = o.product.price * o.quantity
-
-            # Pagination Range Logic
             if hasattr(paginator, 'get_elided_page_range'):
                 custom_page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
             else:
@@ -255,8 +266,6 @@ def user_profile(request):
     elif active_tab == 'bag':
         cart_items = []
         cart_total = 0
-
-        # ✨ DB Cart Logic for Profile ✨
         try:
             cart = Cart.objects.get(user=user)
             items = cart.items.select_related('product').all()
@@ -266,7 +275,7 @@ def user_profile(request):
                 cart_total += item.product.total_price
                 cart_items.append(item.product)
         except Cart.DoesNotExist:
-            pass # No cart yet
+            pass
 
         context['cart_items'] = cart_items
         context['cart_total'] = cart_total
@@ -364,82 +373,90 @@ def delete_review(request, review_id):
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    related_products = Product.objects.filter(category=product.category).exclude(id=product.id)[:4]
-    error_message = None
+    related_products = (
+        Product.objects.filter(category=product.category)
+        .exclude(id=product.id)[:4]
+    )
 
+    # ✅ IMPORTANT: compute has_purchased for BOTH GET and POST
+    has_purchased = False
+    if request.user.is_authenticated:
+        has_purchased = OrderItem.objects.filter(
+            order__user=request.user,
+            order__status='Processed',   # only "Processed" counts as purchased
+            product=product
+        ).exists()
+
+    # Handle review submission (POST)
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
 
-        if getattr(request.user, 'role', '') == 'vendor':
-             error_message = "Vendors cannot write reviews."
-        else:
-            rating_val = request.POST.get('rating')
-            comment_val = request.POST.get('comment')
+        if not has_purchased:
+            messages.error(request, "Only customers who have purchased (Processed) can leave a review.")
+            return redirect('product_detail', product_id=product.id)
 
-            if rating_val and comment_val:
-                try:
-                    rating_int = int(rating_val)
-                    new_review = Review.objects.create(
-                        product=product,
-                        user=request.user,
-                        rating=rating_int,
-                        comment=comment_val
-                    )
-                    try:
-                        images = request.FILES.getlist('review_images')
-                        for img in images:
-                            ReviewMedia.objects.create(review=new_review, file=img, media_type='image')
-                        video = request.FILES.get('review_video')
-                        if video:
-                            ReviewMedia.objects.create(review=new_review, file=video, media_type='video')
-                    except Exception as media_e:
-                        print(f"Media Upload Warning: {media_e}")
-                    return redirect('product_detail', product_id=product.id)
+        rating_val = request.POST.get('rating')
+        comment_val = request.POST.get('comment')
 
-                except OperationalError as e:
-                    if "no such column" in str(e):
-                        error_message = "System Update Required: Please run 'python manage.py migrate' in the console."
-                    else:
-                        error_message = f"Database Error: {str(e)}"
-                except Exception as e:
-                    error_message = f"Error: {str(e)}"
-            else:
-                error_message = "Please provide both a rating and a comment."
+        if not rating_val or not comment_val:
+            messages.error(request, "Please provide both a rating and a comment.")
+            return redirect('product_detail', product_id=product.id)
 
-    try:
-        reviews_qs = Review.objects.filter(product=product).order_by('-created_at')
-        total_reviews = reviews_qs.count()
-        avg_rating_data = reviews_qs.aggregate(Avg('rating'))
-        avg_rating = round(avg_rating_data['rating__avg'] or 0, 1)
+        try:
+            rating_int = int(rating_val)
+            new_review = Review.objects.create(
+                product=product,
+                user=request.user,
+                rating=rating_int,
+                comment=comment_val
+            )
 
-        distribution = []
-        for star in range(5, 0, -1):
-            count = reviews_qs.filter(rating=star).count()
-            percent = (count / total_reviews * 100) if total_reviews > 0 else 0
-            distribution.append({'star': star, 'percent': percent, 'count': count})
+            # Upload multiple images
+            images = request.FILES.getlist('review_images')
+            for img in images:
+                ReviewMedia.objects.create(
+                    review=new_review,
+                    file=img,
+                    media_type='image'
+                )
 
-        reviews_list = []
-        for r in reviews_qs:
-            r.filled_stars = [1] * r.rating
-            r.empty_stars = [1] * (5 - r.rating)
-            reviews_list.append(r)
+            # Upload max 1 video
+            video = request.FILES.get('review_video')
+            if video:
+                ReviewMedia.objects.create(
+                    review=new_review,
+                    file=video,
+                    media_type='video'
+                )
 
-    except OperationalError as e:
-        if "no such column" in str(e):
-            error_message = "System Update Required: Please run 'python manage.py migrate' in the console."
-        else:
-            error_message = f"Database Error: {str(e)}"
-        reviews_list = []
-        total_reviews = 0
-        avg_rating = 0
-        distribution = []
-    except Exception as db_e:
-        error_message = f"Database Error: {str(db_e)}"
-        reviews_list = []
-        total_reviews = 0
-        avg_rating = 0
-        distribution = []
+            messages.success(request, "Review submitted successfully!")
+            return redirect('product_detail', product_id=product.id)
+
+        except ValueError:
+            messages.error(request, "Invalid rating value.")
+            return redirect('product_detail', product_id=product.id)
+        except Exception as e:
+            messages.error(request, f"Failed to submit review: {e}")
+            return redirect('product_detail', product_id=product.id)
+
+    # ===== Reviews display data =====
+    reviews_qs = Review.objects.filter(product=product).order_by('-created_at')
+    total_reviews = reviews_qs.count()
+    avg_rating_data = reviews_qs.aggregate(Avg('rating'))
+    avg_rating = round(avg_rating_data['rating__avg'] or 0, 1)
+
+    distribution = []
+    for star in range(5, 0, -1):
+        count = reviews_qs.filter(rating=star).count()
+        percent = (count / total_reviews * 100) if total_reviews > 0 else 0
+        distribution.append({'star': star, 'percent': percent, 'count': count})
+
+    reviews_list = []
+    for r in reviews_qs:
+        r.filled_stars = [1] * r.rating
+        r.empty_stars = [1] * (5 - r.rating)
+        reviews_list.append(r)
 
     context = {
         'product': product,
@@ -448,9 +465,10 @@ def product_detail(request, product_id):
         'total_reviews': total_reviews,
         'avg_rating': avg_rating,
         'distribution': distribution,
-        'error': error_message,
+        'has_purchased': has_purchased,
     }
     return render(request, 'product_detail.html', context)
+
 
 def all_reviews(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -686,7 +704,8 @@ def logout_view(request):
 @login_required
 def vendor_dashboard(request):
     if getattr(request.user, 'role', '') != 'vendor': raise PermissionDenied
-    total_sales = Order.objects.aggregate(total=Sum(F('product__price') * F('quantity')))['total']
+    # ✨ 核心修改：跨表计算总销售额 (OrderItem price * quantity)
+    total_sales = Order.objects.aggregate(total=Sum(F('items__price') * F('items__quantity')))['total']
     active_products = Product.objects.filter(available=True).count()
     pending_orders = Order.objects.filter(status='Pending').count()
     all_orders = Order.objects.all()
@@ -760,13 +779,20 @@ def toggle_product_availability(request, product_id):
         product.save()
     return redirect('vendor_products')
 
+# ✨✨✨ 核心修改：Vendor Orders 列表显示总价 ✨✨✨
 @login_required
 def vendor_orders(request):
     if getattr(request.user, 'role', '') != 'vendor': raise PermissionDenied
-    orders = Order.objects.all().order_by('-order_date')
+
+    # 计算每个订单的总价并作为字段 'calculated_total' 返回
+    orders = Order.objects.annotate(
+        calculated_total=Sum(F('items__price') * F('items__quantity'))
+    ).order_by('-order_date')
+
     paginator = Paginator(orders, 8)
     page_obj = paginator.get_page(request.GET.get('page'))
     custom_page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1) if hasattr(paginator, 'get_elided_page_range') else paginator.page_range
+
     return render(request, 'vendor_orders.html', {'orders': page_obj, 'custom_page_range': custom_page_range})
 
 @login_required
@@ -821,9 +847,9 @@ def heartbeat(request):
     if request.user.is_authenticated: request.session.modified = True
     return HttpResponse("alive")
 
+# ✨✨✨ 核心修改：Checkout 创建逻辑 (一单多品) ✨✨✨
 @login_required
 def checkout(request):
-    # 1. Get Cart Items
     cart_items = []
     total_price = 0
 
@@ -839,7 +865,6 @@ def checkout(request):
         except Cart.DoesNotExist:
             pass
     else:
-        # Fallback for session (should force login though per requirement)
         cart = request.session.get('cart', {})
         if cart:
             products = Product.objects.filter(id__in=cart.keys())
@@ -852,55 +877,50 @@ def checkout(request):
 
     if not cart_items: return redirect('home')
 
-    # 2. Get Saved Addresses
     saved_addresses = []
     if request.user.is_authenticated:
         saved_addresses = ShippingAddress.objects.filter(user=request.user).order_by('-is_default')
 
-    # 3. Handle POST (Place Order)
     if request.method == 'POST':
-        # ✨ SAFEGUARD: Only process order if 'payment_method' is present in POST data
-        # This prevents the cart's accidental POST request from triggering an empty order
         if 'payment_method' in request.POST:
-            order_ids = []
-
-            # Determine address source
-            address_source = request.POST.get('address_source', 'new')
+            # 1. 构造收货信息
             shipping_info = ""
-
+            address_source = request.POST.get('address_source', 'new')
             if address_source == 'existing':
                 addr_id = request.POST.get('selected_address_id')
-                # Add check if addr_id exists
                 if addr_id:
                     addr = get_object_or_404(ShippingAddress, id=addr_id, user=request.user)
                     shipping_info = f"{addr.detail_address}, {addr.street}, {addr.city}, {addr.country}"
             else:
-                # Create/Use new address (basic logic, typically we'd save it)
                 shipping_info = f"{request.POST.get('address_detail')}, {request.POST.get('address_street')}, {request.POST.get('address_city')}"
-                # Optionally save this new address to DB if user wants
 
+            # 2. 创建主订单 (Main Order)
+            order = Order.objects.create(
+                user=request.user,
+                status="Pending",
+                shipping_info=shipping_info,
+                status_updated_at=timezone.now()
+            )
+
+            # 3. 创建子项 (OrderItems)
             for item in cart_items:
-                order = Order.objects.create(
-                    user=request.user,
+                OrderItem.objects.create(
+                    order=order,
                     product=item,
                     quantity=item.quantity,
-                    status="Pending"
-                    # In real app, we'd save shipping_info to order
+                    price=item.price
                 )
-                order_ids.append(order.id)
+                # 扣减库存
                 item.stock -= item.quantity
                 item.save()
 
-            # Clear Cart
+            # 4. 清空购物车
             if request.user.is_authenticated:
                 Cart.objects.filter(user=request.user).delete()
             else:
                 request.session['cart'] = {}
 
-            return redirect('order_confirmation', order_id=order_ids[0])
-        else:
-            # If POST but no payment method (e.g. from old cart), fall through to render checkout page
-            pass
+            return redirect('order_confirmation', order_id=order.id)
 
     context = {
         'cart_items': cart_items,
@@ -909,68 +929,89 @@ def checkout(request):
     }
     return render(request, 'checkout.html', context)
 
+# ✨✨✨ 核心修改：确认页面 (显示所有子项) ✨✨✨
 def order_confirmation(request, order_id):
-    primary_order = get_object_or_404(Order, id=order_id, user=request.user)
+    order = get_object_or_404(Order, id=order_id, user=request.user)
 
-    # Heuristic: Get orders created within 5 seconds of the primary order by the same user
-    # This groups the cart items together for the receipt view
-    time_threshold_before = primary_order.order_date - timezone.timedelta(seconds=5)
-    time_threshold_after = primary_order.order_date + timezone.timedelta(seconds=5)
-
-    order_items = Order.objects.filter(
-        user=request.user,
-        order_date__range=(time_threshold_before, time_threshold_after)
-    )
-
-    # Calculate totals
-    for item in order_items:
-        item.total_price = item.product.price * item.quantity
-
-    total_amount = sum(item.total_price for item in order_items)
+    # 通过反向关联 items 获取商品
+    order_items = order.items.select_related('product').all()
 
     context = {
-        'order': primary_order, # For singular reference (ID, date)
-        'order_items': order_items, # For list view
-        'total_amount': total_amount
+        'order': order,
+        'order_items': order_items,
+        'total_amount': order.total_price # 使用 Model 中定义的 @property
     }
     return render(request, 'order_confirmation.html', context)
 
+# ✨✨✨ 核心修改：商家订单处理 (状态机+时间更新) ✨✨✨
 @login_required
 def order_process(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
-    # Security check: Ensure only vendors can access this
     if getattr(request.user, 'role', '') != 'vendor':
         raise PermissionDenied
 
-    # ✨ Calculate total price for display
-    order.total_price = order.product.price * order.quantity
-
     if request.method == 'POST':
         new_status = request.POST.get('status')
-        valid_statuses = ['Pending', 'Shipped', 'Processed', 'Cancelled']
+        current_status = order.status
+        allowed = False
 
-        if new_status in valid_statuses:
+        # 状态机逻辑更新：严格控制流转
+        if current_status == 'Pending':
+            # Pending 只能去 Shipped 或 Cancelled
+            if new_status in ['Shipped', 'Cancelled']:
+                allowed = True
+        elif current_status == 'Shipped':
+            # Shipped 只能去 Processed (完成)
+            if new_status == 'Processed':
+                allowed = True
+        # Cancelled 和 Processed 是终态，不允许任何修改
+
+        if allowed:
             order.status = new_status
+            order.status_updated_at = timezone.now() # 更新通用时间
+
+            # ✨✨✨ 核心修改：根据 B4 Requirement 记录各阶段时间 ✨✨✨
+            if new_status == 'Shipped':
+                order.shipped_at = timezone.now()
+            elif new_status == 'Processed':
+                order.processed_at = timezone.now()
+            elif new_status == 'Cancelled':
+                order.cancelled_at = timezone.now()
+
             order.save()
             messages.success(request, f"Order #{order.id} status updated to {new_status}.")
+        else:
+            # 增加更具体的错误提示，帮助调试
+            if current_status == 'Pending' and new_status == 'Processed':
+                msg = "Invalid Action: Pending orders must be Shipped first."
+            elif current_status == 'Shipped' and new_status == 'Pending':
+                msg = "Invalid Action: Cannot revert Shipped order to Pending."
+            elif current_status in ['Cancelled', 'Processed']:
+                msg = f"Invalid Action: Order is already {current_status} and cannot be changed."
+            else:
+                msg = f"Invalid Action: Cannot change status from {current_status} to {new_status}."
+            messages.error(request, msg)
+
         return redirect('order_process', order_id=order.id)
 
     return render(request, 'order_process.html', {'order': order})
 
-# ✨✨✨ UPDATED VENDOR REVIEW MANAGEMENT (Fetching ALL reviews for demo purposes) ✨✨✨
+# ✨✨✨ 核心修改：取消订单 (时间更新) ✨✨✨
 @login_required
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
     if order.status == 'Pending':
         order.status = 'Cancelled'
+        order.status_updated_at = timezone.now() # 更新通用时间
+        order.cancelled_at = timezone.now() # ✨ 核心修改：记录取消时间
         order.save()
         messages.success(request, f"Order #{order.id} has been cancelled successfully.")
     else:
         messages.error(request, "This order cannot be cancelled at this stage.")
 
-    return redirect('/profile/?tab=orders')
+    return redirect(f"{reverse('user_profile')}?tab=orders")
 
 @login_required
 def vendor_reviews(request):

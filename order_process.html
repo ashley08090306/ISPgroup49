@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,12 +41,17 @@
         .product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; background: #f9f9f9; border: 1px solid #eee; }
         .info-label { font-size: 0.75rem; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 5px; }
         .info-value { font-size: 0.95rem; color: #000; font-weight: 500; }
+
+        /* Timeline Style */
+        .timeline-item { position: relative; padding-left: 20px; margin-bottom: 10px; border-left: 2px solid #eee; }
+        .timeline-item::before { content: ''; position: absolute; left: -5px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+        .timeline-item.active { border-left-color: #000; }
+        .timeline-item.active::before { background: #000; }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <div class="col-md-2 sidebar p-0">
                 <div class="p-4 text-center border-bottom border-secondary">
                     <h5 class="mb-0 fw-bold tracking-wider">VENDOR PORTAL</h5>
@@ -75,16 +79,13 @@
                 </div>
             </div>
 
-            <!-- Content -->
             <div class="col-md-10 p-5">
-                <!-- Header -->
                 <div class="page-header">
                     <div class="d-flex align-items-center gap-3">
                         <a href="{% url 'vendor_orders' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to Orders</a>
                         <div style="width: 1px; height: 20px; background: #ddd;"></div>
                         <h2 class="mb-0">Order #{{ order.id }}</h2>
 
-                        <!-- Status Badge Display -->
                         <span class="status-badge
                             {% if order.status == 'Pending' %}status-pending
                             {% elif order.status == 'Processed' %}status-processed
@@ -93,7 +94,12 @@
                             {{ order.status }}
                         </span>
                     </div>
-                    <div class="text-muted small">Placed on {{ order.order_date|date:"F d, Y at H:i" }}</div>
+
+                    {% load tz %}  <!-- 加载时区模板标签 -->
+                    <div class="text-muted small">
+                        Placed on {{ order.order_date|timezone:"Asia/Shanghai"|date:"F d, Y at H:i" }}
+                    </div>
+
                 </div>
 
                 {% if messages %}
@@ -103,9 +109,7 @@
                 {% endif %}
 
                 <div class="row">
-                    <!-- Left Column: Details -->
                     <div class="col-lg-8">
-                        <!-- Product Details -->
                         <div class="card">
                             <div class="card-header">Order Items</div>
                             <div class="card-body p-0">
@@ -119,31 +123,38 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        {% for item in order.items.all %}
                                         <tr>
                                             <td class="ps-4 py-3">
                                                 <div class="d-flex align-items-center gap-3">
-                                                    {% if order.product.images.first %}
-                                                        <img src="{{ order.product.images.first.image.url }}" class="product-img">
+                                                    {% if item.product.images.first %}
+                                                        <img src="{{ item.product.images.first.image.url }}" class="product-img">
                                                     {% else %}
                                                         <div class="product-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
                                                     {% endif %}
                                                     <div>
-                                                        <div class="fw-bold">{{ order.product.product_name }}</div>
-                                                        <div class="small text-muted">ID: {{ order.product.id }}</div>
-                                                        <div class="small text-muted">Brand: {{ order.product.brand }}</div>
+                                                        <div class="fw-bold">{{ item.product.product_name }}</div>
+                                                        <div class="small text-muted">ID: {{ item.product.id }}</div>
+                                                        <div class="small text-muted">Brand: {{ item.product.brand }}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>${{ order.product.price }}</td>
-                                            <td>x {{ order.quantity }}</td>
-                                            <td class="text-end pe-4 fw-bold">${{ order.total_price }}</td>
+                                            <td>${{ item.price }}</td>
+                                            <td>x {{ item.quantity }}</td>
+                                            <td class="text-end pe-4 fw-bold">${{ item.total_price }}</td>
                                         </tr>
+                                        {% endfor %}
                                     </tbody>
+                                    <tfoot class="bg-light">
+                                        <tr>
+                                            <td colspan="3" class="text-end fw-bold py-3 text-uppercase small text-muted">Order Total</td>
+                                            <td class="text-end pe-4 fw-bold py-3 fs-5 text-success">${{ order.total_price }}</td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Info Grid -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="card h-100">
@@ -168,35 +179,53 @@
                                 <div class="card h-100">
                                     <div class="card-header"><i class="bi bi-geo-alt me-2"></i> Shipping Address</div>
                                     <div class="card-body">
-                                        {% with addr=order.user.addresses.first %}
-                                            {% if addr %}
-                                                <div class="info-value mb-1">{{ addr.detail_address }}</div>
-                                                <div class="info-value mb-1">{{ addr.street }}, {{ addr.district }}</div>
-                                                <div class="info-value mb-1">{{ addr.city }}, {{ addr.country }}</div>
-                                                <span class="badge bg-light text-dark border mt-2">{{ addr.get_category_display }}</span>
-                                            {% else %}
-                                                <div class="text-muted fst-italic">No address info available.</div>
-                                            {% endif %}
-                                        {% endwith %}
+                                        {% if order.shipping_info %}
+                                            <div class="info-value mb-1" style="white-space: pre-line;">{{ order.shipping_info }}</div>
+                                        {% else %}
+                                            {% with addr=order.user.addresses.first %}
+                                                {% if addr %}
+                                                    <div class="info-value mb-1">{{ addr.detail_address }}</div>
+                                                    <div class="info-value mb-1">{{ addr.street }}, {{ addr.district }}</div>
+                                                    <div class="info-value mb-1">{{ addr.city }}, {{ addr.country }}</div>
+                                                    <span class="badge bg-light text-dark border mt-2">{{ addr.get_category_display }}</span>
+                                                {% else %}
+                                                    <div class="text-muted fst-italic">No address info available.</div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Column: Actions -->
                     <div class="col-lg-4">
-                        <div class="card border-0 shadow-sm" style="background: #111; color: white;">
+                        <div class="card border-0 shadow-sm"
+                             style="background: #111; color: white; {% if order.status == 'Cancelled' or order.status == 'Processed' %}opacity: 0.5; pointer-events: none;{% endif %}">
                             <div class="card-body p-4">
                                 <h5 class="mb-4">Update Status</h5>
                                 <form method="POST" id="statusForm">
                                     {% csrf_token %}
                                     <label class="text-white-50 small text-uppercase fw-bold mb-2">Change Status To:</label>
+
                                     <select name="status" id="statusSelect" class="form-select form-select-lg mb-4" style="border: none;">
-                                        <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                        <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
-                                        <option value="Processed" {% if order.status == 'Processed' %}selected{% endif %}>Processed</option>
-                                        <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+
+                                        {% if order.status == 'Pending' %}
+                                            <option value="Pending" selected>Pending</option>
+                                            <option value="Shipped">Shipped</option>
+                                            <option value="Cancelled">Cancelled</option>
+
+                                        {% elif order.status == 'Shipped' %}
+                                            <option value="Shipped" selected>Shipped</option>
+                                            <option value="Processed">Processed</option>
+
+                                        {% elif order.status == 'Processed' %}
+                                            <option value="Processed" selected disabled>Processed</option>
+
+                                        {% elif order.status == 'Cancelled' %}
+                                            <option value="Cancelled" selected disabled>Cancelled</option>
+
+                                        {% endif %}
                                     </select>
 
                                     <button type="submit" id="updateBtn" class="btn btn-light w-100 fw-bold py-3 text-uppercase">Update Order</button>
@@ -206,15 +235,57 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="card">
+                            <div class="card-header">Order History</div>
+                            <div class="card-body">
+                                <div class="timeline-item active">
+                                    <div class="small fw-bold">Order Placed</div>
+
+                                    {% load tz %}  <!-- 加载时区模板标签 -->
+                                    <div class="text-muted small">
+                                        Placed on {{ order.order_date|timezone:"Asia/Shanghai"|date:"F d, Y at H:i" }}
+                                    </div>
+                                </div>
+                                {% if order.shipped_at %}
+                                <div class="timeline-item active">
+                                    <div class="small fw-bold">Shipped</div>
+
+                                    {% load tz %}  <!-- 加载时区模板标签 -->
+                                    <div class="text-muted small">
+                                        Placed on {{ order.shipped_at|timezone:"Asia/Shanghai"|date:"F d, Y at H:i" }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if order.processed_at %}
+                                <div class="timeline-item active">
+                                    <div class="small fw-bold">Processed (Completed)</div>
+
+                                    {% load tz %}  <!-- 加载时区模板标签 -->
+                                    <div class="text-muted small">
+                                        Placed on {{ order.processed_at|timezone:"Asia/Shanghai"|date:"F d, Y at H:i" }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if order.cancelled_at %}
+                                <div class="timeline-item active">
+                                    <div class="small fw-bold text-danger">Cancelled</div>
+
+                                    {% load tz %}  <!-- 加载时区模板标签 -->
+                                    <div class="text-muted small">
+                                        Placed on {{ order.cancelled_at|timezone:"Asia/Shanghai"|date:"F d, Y at H:i" }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ✨✨✨ MODALS FOR STATUS LOGIC ✨✨✨ -->
-
-    <!-- Modal 1: Locked Status (Processed or Cancelled) -->
     <div class="modal fade" id="lockedStatusModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -232,7 +303,6 @@
         </div>
     </div>
 
-    <!-- Modal 2: Shipped to Pending Warning -->
     <div class="modal fade" id="shippedWarningModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -251,7 +321,6 @@
         </div>
     </div>
 
-    <!-- Modal 3: Confirm Processed -->
     <div class="modal fade" id="confirmProcessedModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -298,7 +367,6 @@
                     e.preventDefault();
                     lockedMessageEl.innerText = "Order is completed, status cannot be changed.";
                     lockedModal.show();
-                    // Reset selection
                     select.value = currentStatus;
                     return;
                 }
@@ -308,23 +376,25 @@
                     e.preventDefault();
                     lockedMessageEl.innerText = "Order is cancelled, status cannot be changed.";
                     lockedModal.show();
-                    // Reset selection
                     select.value = currentStatus;
                     return;
                 }
 
-                // 1. Shipped Logic
+                // 1. Shipped Logic (Failsafe, though options are hidden now)
                 if (currentStatus === 'Shipped') {
                     if (newStatus === 'Pending') {
-                        // Prevent: Shipped -> Pending
                         e.preventDefault();
                         shippedWarningModal.show();
-                        // Reset selection temporarily (until user decides)
                         select.value = currentStatus;
                         return;
                     }
-                    // Shipped -> Processed is allowed directly via dropdown,
-                    // OR Shipped -> Cancelled (if logic permits, prompt didn't forbid this explicitly, but standard logic usually allows cancel unless locked)
+                }
+
+                // If user selects "Processed" directly from dropdown
+                if (newStatus === 'Processed' && currentStatus !== 'Processed') {
+                    e.preventDefault();
+                    confirmProcessedModal.show();
+                    return;
                 }
             });
 

@@ -1,7 +1,7 @@
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.utils import timezone # ✨ 引入 timezone 用于处理时间
 
 # ==================== 1. 用户与认证系统 ====================
 
@@ -103,20 +103,62 @@ class ProductImage(models.Model):
         return f"Image for {self.product.product_name}"
 
 
-# ==================== 5. 订单系统 ====================
+# ==================== 5. 订单系统 (核心修改区域) ====================
 
 class Order(models.Model):
+    # 状态选项
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Shipped', 'Shipped'),
+        ('Processed', 'Processed'), # Changed Delivered -> Processed to match logic
+        ('Cancelled', 'Cancelled'),
+    )
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # 买家
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)  # 关联商品
-    quantity = models.PositiveIntegerField()  # 购买数量
+    
+    # ✨ 改动 1: 移除 product 和 quantity (移到 OrderItem)
+    # ✨ 改动 2: 添加状态变更时间 (老师要求)
+    status_updated_at = models.DateTimeField(null=True, blank=True)
+
+    # ✨✨✨ 新增：Requirement B4 专用时间字段 ✨✨✨
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    
     order_date = models.DateTimeField(auto_now_add=True)  # 订单日期
-    status = models.CharField(max_length=20, default='Pending')  # 订单状态
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')  # 订单状态
+
+    # ✨ 改动 3: 地址快照 (防止用户改地址表后，历史订单地址变动)
+    shipping_info = models.TextField(blank=True, null=True)
 
     payment_status = models.CharField(max_length=20, default='Unpaid')
     vendor_responded = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Order {self.id} by {self.user.username}"
+        return f"Order #{self.id} by {self.user.username}"
+
+    # ✨ 辅助方法：计算该订单总价
+    @property
+    def total_price(self):
+        # 聚合查询所有子项的总价
+        return sum(item.total_price for item in self.items.all())
+
+# ✨✨✨ 新增：订单明细表 (支持一单多品) ✨✨✨
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    
+    # 记录购买时的单价 (防止商品后续改价影响历史订单)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.product_name}"
+
+    @property
+    def total_price(self):
+        return self.price * self.quantity
+
 
 class ShopProfile(models.Model):
     shop_name = models.CharField(max_length=100, default="My Awesome Shop")
@@ -140,7 +182,7 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # ✨ 新增：商家回复字段 ✨
+    # ✨ 商家回复字段
     vendor_reply = models.TextField(blank=True, null=True)
     replied_at = models.DateTimeField(blank=True, null=True)
 

@@ -14,6 +14,7 @@ import json, re
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib import messages
+from .utils import sensitive_filter
 from django.utils import timezone # ✨ 核心修改：必须引入
 
 # ==================== 首页与搜索 (多语言支持 + 停用词优化版) ====================
@@ -378,6 +379,12 @@ def product_detail(request, product_id):
         .exclude(id=product.id)[:4]
     )
 
+    # 状态变量：用于在前端 Modal 中保留用户的输入，防止被清空
+    error_message = None
+    submitted_rating = 5
+    submitted_comment = ""
+    has_error_modal = False
+
     # ✅ IMPORTANT: compute has_purchased for BOTH GET and POST
     has_purchased = False
     if request.user.is_authenticated:
@@ -396,49 +403,64 @@ def product_detail(request, product_id):
             messages.error(request, "Only customers who have purchased (Processed) can leave a review.")
             return redirect('product_detail', product_id=product.id)
 
-        rating_val = request.POST.get('rating')
-        comment_val = request.POST.get('comment')
+        if getattr(request.user, 'role', '') == 'vendor':
+             error_message = "Vendors cannot write reviews."
+             has_error_modal = True
+        else:
+            rating_val = request.POST.get('rating')
+            comment_val = request.POST.get('comment')
 
-        if not rating_val or not comment_val:
-            messages.error(request, "Please provide both a rating and a comment.")
-            return redirect('product_detail', product_id=product.id)
+            if not rating_val or not comment_val:
+                messages.error(request, "Please provide both a rating and a comment.")
+                return redirect('product_detail', product_id=product.id)
 
-        try:
-            rating_int = int(rating_val)
-            new_review = Review.objects.create(
-                product=product,
-                user=request.user,
-                rating=rating_int,
-                comment=comment_val
-            )
+            try:
+                submitted_rating = int(rating_val)
+                submitted_comment = comment_val
 
-            # Upload multiple images
-            images = request.FILES.getlist('review_images')
-            for img in images:
-                ReviewMedia.objects.create(
-                    review=new_review,
-                    file=img,
-                    media_type='image'
-                )
+                # ✨✨✨ 敏感词拦截核心逻辑 ✨✨✨
+                is_sensitive, filtered_text = sensitive_filter.filter(comment_val)
 
-            # Upload max 1 video
-            video = request.FILES.get('review_video')
-            if video:
-                ReviewMedia.objects.create(
-                    review=new_review,
-                    file=video,
-                    media_type='video'
-                )
+                if is_sensitive:
+                    # 命中敏感词，不存入数据库，开启 Modal 保留输入状态
+                    error_message = "Warning: Your review contains inappropriate language (such as profanity or sensitive topics). Please edit your comment before posting."
+                    has_error_modal = True
+                else:
+                    # 正常保存
+                    new_review = Review.objects.create(
+                        product=product,
+                        user=request.user,
+                        rating=submitted_rating,
+                        comment=comment_val
+                    )
 
-            messages.success(request, "Review submitted successfully!")
-            return redirect('product_detail', product_id=product.id)
+                    # Upload multiple images
+                    images = request.FILES.getlist('review_images')
+                    for img in images:
+                        ReviewMedia.objects.create(
+                            review=new_review,
+                            file=img,
+                            media_type='image'
+                        )
 
-        except ValueError:
-            messages.error(request, "Invalid rating value.")
-            return redirect('product_detail', product_id=product.id)
-        except Exception as e:
-            messages.error(request, f"Failed to submit review: {e}")
-            return redirect('product_detail', product_id=product.id)
+                    # Upload max 1 video
+                    video = request.FILES.get('review_video')
+                    if video:
+                        ReviewMedia.objects.create(
+                            review=new_review,
+                            file=video,
+                            media_type='video'
+                        )
+
+                    messages.success(request, "Review submitted successfully!")
+                    return redirect('product_detail', product_id=product.id)
+
+            except ValueError:
+                messages.error(request, "Invalid rating value.")
+                return redirect('product_detail', product_id=product.id)
+            except Exception as e:
+                error_message = f"Failed to submit review: {e}"
+                has_error_modal = True
 
     # ===== Reviews display data =====
     reviews_qs = Review.objects.filter(product=product).order_by('-created_at')
@@ -466,6 +488,12 @@ def product_detail(request, product_id):
         'avg_rating': avg_rating,
         'distribution': distribution,
         'has_purchased': has_purchased,
+
+        # ✨ 传回前端，用于展示红框警告并保留用户输入
+        'error_message': error_message,
+        'submitted_comment': submitted_comment,
+        'submitted_rating': submitted_rating,
+        'has_error_modal': has_error_modal,
     }
     return render(request, 'product_detail.html', context)
 
@@ -655,6 +683,7 @@ def register(request):
 
             return redirect('home')
         except Exception as e:
+            print(f"⚠️ Register Error: {e}")  # ✨ 把真正的错误原因打印在你的终端里
             return render(request, 'register.html', {'error': 'Something went wrong.'})
     return render(request, 'register.html')
 
@@ -1057,6 +1086,16 @@ def vendor_reviews(request):
     else:
         custom_page_range = paginator.page_range
 
+    # ✨✨✨ 核心逻辑：从 Session 提取可能因为敏感词被拦截的草稿和报错 ✨✨✨
+    # 这样页面刷新后文字依然保留在文本框里
+    for r in page_obj:
+        draft = request.session.pop(f'draft_reply_{r.id}', None)
+        error = request.session.pop(f'reply_error_{r.id}', None)
+        if draft is not None:
+            r.draft_reply = draft
+        if error is not None:
+            r.reply_error = error
+
     context = {
         'reviews': page_obj,
         'total_reviews_count': total_reviews_count,
@@ -1068,6 +1107,7 @@ def vendor_reviews(request):
     }
 
     return render(request, 'vendor_reviews.html', context)
+
 
 @login_required
 def vendor_reply_review(request, review_id):
@@ -1082,9 +1122,20 @@ def vendor_reply_review(request, review_id):
     if request.method == 'POST':
         reply_text = request.POST.get('reply_text')
         if reply_text:
-            review.vendor_reply = reply_text
-            review.replied_at = timezone.now()
-            review.save()
-            messages.success(request, 'Reply posted successfully.')
+            # ✨✨✨ 商家端敏感词拦截核心逻辑 ✨✨✨
+            # 调用 utils.py 中的 DFA 过滤器检测
+            is_sensitive, filtered_text = sensitive_filter.filter(reply_text)
 
-    return redirect('vendor_reviews')
+            if is_sensitive:
+                # 命中敏感词：将原文字和统一的报错信息存入 session，防止清空
+                request.session[f'draft_reply_{review.id}'] = reply_text
+                request.session[f'reply_error_{review.id}'] = "Warning: Your response contains inappropriate language (such as profanity or sensitive topics). Please edit your reply before posting."
+            else:
+                # 未命中：允许保存
+                review.vendor_reply = reply_text
+                review.replied_at = timezone.now()
+                review.save()
+                messages.success(request, 'Reply posted successfully.')
+
+    # 返回上一页 (确保如果您在第3页回复，报错刷新后依然停留在第3页)
+    return redirect(request.META.get('HTTP_REFERER', 'vendor_reviews'))

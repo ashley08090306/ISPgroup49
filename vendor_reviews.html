@@ -98,6 +98,20 @@
             transition: opacity 0.2s;
         }
         .jump-btn:hover { opacity: 0.8; }
+
+        /* ✨ Appended Review Styles ✨ */
+        .appended-review-box {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+        .appended-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1d1d1f;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -188,7 +202,10 @@
                 {% if messages %}
                     {% for message in messages %}
                         {% if message.tags != 'error' %}
-                            <div class="alert alert-success border-0 shadow-sm">{{ message }}</div>
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm auto-close-alert" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
@@ -222,6 +239,15 @@
                             </div>
 
                             <p class="mb-3 text-secondary">{{ review.comment }}</p>
+
+                            {% if review.appended_comment %}
+                            <div class="appended-review-box mb-3">
+                                <div class="appended-title">
+                                    Update <span class="text-muted fw-normal">({{ review.appended_at|date:"M d, Y" }})</span>
+                                </div>
+                                <p class="text-secondary mb-0" style="font-size: 0.95rem;">{{ review.appended_comment }}</p>
+                            </div>
+                            {% endif %}
 
                             {% if review.vendor_reply %}
                                 <div class="bg-light p-3 rounded border-start border-4 border-dark mb-2">
@@ -334,6 +360,23 @@
                 alert("Please enter a valid page number between 1 and " + maxPage);
             }
         }
+
+        // ✨✨✨ 提示条自动淡出逻辑 ✨✨✨
+        document.addEventListener('DOMContentLoaded', function() {
+            // 找到所有带有 auto-close-alert 类的提示框
+            const alerts = document.querySelectorAll('.auto-close-alert');
+            
+            alerts.forEach(function(alert) {
+                // 设置 3.5 秒 (3500毫秒) 后自动触发 Bootstrap 的关闭动画
+                setTimeout(function() {
+                    // 确保元素还在 DOM 中
+                    if (document.body.contains(alert)) {
+                        let bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 3500); 
+            });
+        });
     </script>
     {% include 'heartbeat.html' %}
 </body>

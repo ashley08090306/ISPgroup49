@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -89,7 +88,7 @@
         .review-media-grid { display: flex; gap: 10px; margin-top: 15px; }
         .review-media-item { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #eee; }
 
-        /* ✨ Vendor Reply Box (Same as Product Detail) ✨ */
+        /* Vendor Reply Box */
         .vendor-reply-box {
             background-color: #f9f9f9;
             border-radius: 4px;
@@ -112,6 +111,32 @@
             line-height: 1.5;
             font-style: italic;
         }
+
+        /* ✨ NEW: Review Like Action Row ✨ */
+        .review-action-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .btn-like {
+            background: none;
+            border: none;
+            font-size: 0.95rem;
+            color: #86868b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+            font-weight: 500;
+        }
+        .btn-like:hover { color: #1d1d1f; }
+        /* When liked, the heart turns black */
+        .btn-like i.text-dark { color: #1d1d1f !important; }
     </style>
 </head>
 <body>
@@ -126,7 +151,6 @@
     <div class="container-narrow">
         <h1 class="page-title">Ratings & Reviews</h1>
 
-        <!-- Summary -->
         <div class="summary-section">
             <div class="review-header">
                 <div class="review-score-box">
@@ -149,7 +173,6 @@
             </div>
         </div>
 
-        <!-- List -->
         <div class="reviews-list">
             {% for review in reviews %}
             <div class="review-card">
@@ -175,7 +198,6 @@
                 </div>
                 {% endif %}
 
-                <!-- ✨ VENDOR REPLY SECTION ✨ -->
                 {% if review.vendor_reply %}
                 <div class="vendor-reply-box">
                     <div class="vendor-reply-title">
@@ -185,6 +207,14 @@
                     <div class="vendor-reply-text">"{{ review.vendor_reply }}"</div>
                 </div>
                 {% endif %}
+
+                <div class="review-action-row">
+                    <button class="btn-like" onclick="toggleLike({{ review.id }}, this)">
+                        <i class="bi {% if review.is_liked_by_user %}bi-heart-fill text-dark{% else %}bi-heart{% endif %}"></i>
+                        <span class="like-count">{{ review.like_count|default:"0" }}</span>
+                    </button>
+                </div>
+
             </div>
             {% empty %}
                 <div class="text-center py-5 text-muted">No reviews found.</div>
@@ -192,5 +222,89 @@
         </div>
     </div>
 
+    <div class="modal fade" id="likeLoginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-0">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-5 text-center">
+                    <h5 class="mb-3" style="font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: 0.05em;">Join the Community</h5>
+                    <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">Sign in to appreciate this insight and resonate with like-minded guests.</p>
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-dark w-100 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Sign In / Register</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1055;">
+        <div id="rateLimitToast" class="toast align-items-center text-white bg-black border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" style="font-size: 0.85rem; letter-spacing: 0.05em; padding: 12px 20px;">
+                    <i class="bi bi-info-circle me-2"></i> You are exploring too fast. Please take a moment.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+        function toggleLike(reviewId, btnElement) {
+            if (!isAuthenticated) {
+                // Not logged in -> Show elegant modal
+                const loginModal = new bootstrap.Modal(document.getElementById('likeLoginModal'));
+                loginModal.show();
+                return;
+            }
+
+            // Temporarily disable the button to prevent double-clicks
+            btnElement.disabled = true;
+
+            fetch(`/api/reviews/${reviewId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                // Handle rate limiting (429 Too Many Requests)
+                if (res.status === 429) {
+                    // ✨ 核心修改：触发 Toast 提示 ✨
+                    const toastEl = document.getElementById('rateLimitToast');
+                    const toast = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3秒后自动淡出消失
+                    toast.show();
+                    
+                    btnElement.disabled = false;
+                    return Promise.reject('Rate limited');
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    const icon = btnElement.querySelector('i');
+                    const countSpan = btnElement.querySelector('.like-count');
+                    
+                    if (data.is_liked) {
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill', 'text-dark');
+                    } else {
+                        icon.classList.remove('bi-heart-fill', 'text-dark');
+                        icon.classList.add('bi-heart');
+                    }
+                    countSpan.textContent = data.like_count;
+                }
+                btnElement.disabled = false;
+            })
+            .catch(err => {
+                if (err !== 'Rate limited') console.error("Error toggling like:", err);
+                btnElement.disabled = false;
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -11,10 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <script>
-        const savedSize = localStorage.getItem('userFontSize');
-        if (savedSize) {
-            document.documentElement.style.fontSize = savedSize;
-        }
+        (function() {
+            const savedSize = localStorage.getItem('userFontSize');
+            if (savedSize) {
+                document.documentElement.style.fontSize = savedSize;
+            }
+        })();
     </script>
 
     <style>
@@ -29,9 +30,10 @@
             color: var(--chanel-black);
             background-color: var(--chanel-white);
             overflow-x: hidden;
+            font-size: 1rem;
         }
 
-        /* === Navbar (Strict Match to Home) === */
+        /* === Navbar === */
         .navbar-top-row {
             padding: 0 30px;
             height: 50px;
@@ -68,8 +70,10 @@
         .lang-item {
             font-size: 0.8rem; padding: 8px 20px; text-transform: uppercase; letter-spacing: 0.1em; color: #333;
         }
+
         .goog-te-banner-frame, .goog-te-gadget, #google_translate_element, .skiptranslate { display: none !important; }
-        body>.skiptranslate { display: none !important; }
+        body > .skiptranslate { display: none !important; }
+        body { top: 0px !important; }
 
         /* === Search Overlay === */
         .search-overlay {
@@ -151,6 +155,25 @@
         }
         .btn-outline-action:hover { background: #000; color: #fff; }
 
+        /* ✨ NEW: Elegant Text Link Buttons for Reviews ✨ */
+        .text-action-link {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: color 0.3s;
+        }
+        .text-action-link i { font-size: 0.9rem; margin-right: 5px; }
+        .text-action-link:hover { color: #000; }
+        .text-action-link.text-danger:hover { color: #dc3545 !important; }
+
         /* Address Card */
         .address-card {
             border: 1px solid #eee; padding: 20px; margin-bottom: 20px; position: relative;
@@ -175,7 +198,7 @@
 
         .filter-panel { background: #f9f9f9; padding: 20px; margin-bottom: 30px; border: 1px solid #eee; }
 
-        /* Pagination & Jump - Styled to match Vendor Dashboard */
+        /* Pagination & Jump */
         .custom-page-link {
             width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
             border-radius: 4px !important; border: 1px solid #dee2e6;
@@ -201,6 +224,20 @@
         /* Reviews */
         .review-item { border-bottom: 1px solid #eee; padding: 20px 0; }
         .review-product-link { font-weight: 700; color: #000; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* Appended Review Styles */
+        .appended-review-box {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+        .appended-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1d1d1f;
+            margin-bottom: 5px;
+        }
 
         /* Cart */
         .cart-item-row { display: flex; align-items: center; gap: 20px; }
@@ -238,12 +275,18 @@
     <header>
         <div class="navbar-top-row">
             <div id="google_translate_element"></div>
+
             <div class="d-none d-md-flex gap-4">
                 <div class="dropdown">
                     <button class="lang-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">LANGUAGE</button>
                     <ul class="dropdown-menu lang-dropdown-menu">
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('en')">English</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-CN')">简体中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('zh-TW')">繁體中文</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('ja')">日本語</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('fr')">Français</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('de')">Deutsch</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setLanguage('es')">Español</a></li>
                     </ul>
                 </div>
                 <div class="dropdown">
@@ -251,6 +294,7 @@
                     <ul class="dropdown-menu lang-dropdown-menu">
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('100%')">Standard</a></li>
                         <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('115%')">Large</a></li>
+                        <li><a class="dropdown-item lang-item" href="javascript:void(0)" onclick="setFontSize('130%')">Extra Large</a></li>
                     </ul>
                 </div>
             </div>
@@ -267,7 +311,6 @@
     </header>
 
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="mb-4 d-none d-md-block">
                 <div class="small text-uppercase text-muted mb-1">Welcome</div>
@@ -275,7 +318,7 @@
             </div>
 
             <nav>
-                <a href="{% url 'home' %}" class="nav-item"><i class="bi bi-house"></i> Home</a>
+                <a href="{% url 'home' %}" class="nav-item"><i class="bi bi-house"></i> Explore</a>
                 <a href="?tab=profile" class="nav-item {% if active_tab == 'profile' %}active{% endif %}"><i class="bi bi-person"></i> My Profile</a>
                 <a href="?tab=address" class="nav-item {% if active_tab == 'address' %}active{% endif %}"><i class="bi bi-geo-alt"></i> My Address</a>
                 <a href="?tab=orders" class="nav-item {% if active_tab == 'orders' %}active{% endif %}"><i class="bi bi-box-seam"></i> My Orders</a>
@@ -284,15 +327,17 @@
             </nav>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
+            
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert alert-dark rounded-0 mb-4">{{ message }}</div>
+                    <div class="alert alert-dark alert-dismissible fade show rounded-0 mb-4 shadow-sm auto-close-alert" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 {% endfor %}
             {% endif %}
 
-            <!-- 1. My Profile -->
             {% if active_tab == 'profile' %}
                 <h2 class="section-title">My Profile</h2>
 
@@ -347,7 +392,6 @@
                     </div>
                 </div>
 
-            <!-- 2. My Address -->
             {% elif active_tab == 'address' %}
                 <h2 class="section-title">My Addresses</h2>
 
@@ -413,7 +457,6 @@
                             </div>
                         </div>
 
-                        <!-- Edit Modal -->
                         <div class="modal fade" id="editAddr{{addr.id}}" tabindex="-1">
                             <div class="modal-dialog">
                                 <div class="modal-content rounded-0">
@@ -450,71 +493,111 @@
                     {% endfor %}
                 </div>
 
-            <!-- 3. My Orders -->
             {% elif active_tab == 'orders' %}
 
                 {% if order_detail %}
-                    <!-- Order Detail View -->
                     <div class="mb-4">
                         <a href="?tab=orders" class="text-decoration-none text-muted small text-uppercase"><i class="bi bi-arrow-left"></i> Back to Orders</a>
                     </div>
-                    <h2 class="section-title">Order #{{ order_detail.id }}</h2>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="section-title mb-0 border-0">Order #{{ order_detail.id }}</h2>
+                        <span class="badge bg-dark text-uppercase p-2" style="font-size: 0.8rem;">{{ order_detail.status }}</span>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-8">
-                             <table class="table table-custom">
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th class="text-center">Quantity</th>
-                                        <th class="text-end">Unit Price</th>
-                                        <th class="text-end">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <div class="fw-bold">{{ order_detail.product.product_name }}</div>
-                                            <div class="text-muted small">{{ order_detail.product.brand }}</div>
-                                        </td>
-                                        <td class="text-center">{{ order_detail.quantity }}</td>
-                                        <td class="text-end">${{ order_detail.product.price }}</td>
-                                        <td class="text-end fw-bold">${{ order_detail.total_price }}</td>
-                                    </tr>
-                                </tbody>
-                             </table>
+                             <div class="table-responsive">
+                                 <table class="table table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Unit Price</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in order_items %}
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">{{ item.product.product_name }}</div>
+                                                <div class="text-muted small">{{ item.product.brand }}</div>
+                                            </td>
+                                            <td class="text-center">{{ item.quantity }}</td>
+                                            <td class="text-end">${{ item.price }}</td>
+                                            <td class="text-end fw-bold">${{ item.total_price }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="bg-light">
+                                        <tr>
+                                            <td colspan="3" class="text-end text-uppercase fw-bold pt-3">Order Total</td>
+                                            <td class="text-end fw-bold pt-3 fs-5">${{ order_detail.total_price }}</td>
+                                        </tr>
+                                    </tfoot>
+                                 </table>
+                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="bg-light p-4">
-                                <h6 class="text-uppercase mb-3">Order Info</h6>
-                                <p class="small mb-1"><strong>Date:</strong> {{ order_detail.order_date|date:"M d, Y" }}</p>
-                                <p class="small mb-1"><strong>Status:</strong> {{ order_detail.status }}</p>
+                                <h6 class="text-uppercase mb-3 font-serif">Order Timeline</h6>
+
+                                <p class="small mb-2 d-flex justify-content-between">
+                                    <strong>Placed:</strong>
+                                    <span>{{ order_detail.order_date|date:"M d, H:i" }}</span>
+                                </p>
+
+                                {% if order_detail.shipped_at %}
+                                <p class="small mb-2 d-flex justify-content-between text-success">
+                                    <strong>Shipped:</strong>
+                                    <span>{{ order_detail.shipped_at|date:"M d, H:i" }}</span>
+                                </p>
+                                {% endif %}
+
+                                {% if order_detail.processed_at %}
+                                <p class="small mb-2 d-flex justify-content-between text-success">
+                                    <strong>Processed:</strong>
+                                    <span>{{ order_detail.processed_at|date:"M d, H:i" }}</span>
+                                </p>
+                                {% endif %}
+
+                                {% if order_detail.cancelled_at %}
+                                <p class="small mb-2 d-flex justify-content-between text-danger">
+                                    <strong>Cancelled:</strong>
+                                    <span>{{ order_detail.cancelled_at|date:"M d, H:i" }}</span>
+                                </p>
+                                {% endif %}
+
                                 <hr>
-                                <h6 class="text-uppercase mb-3">Shipping Address</h6>
+                                <h6 class="text-uppercase mb-3 font-serif">Shipping To</h6>
                                 {% if shipping_address %}
-                                <p class="small text-muted">
+                                <p class="small text-muted mb-0">
                                     {{ shipping_address.detail_address }}<br>
                                     {{ shipping_address.street }}, {{ shipping_address.district }}<br>
                                     {{ shipping_address.city }}, {{ shipping_address.country }}
                                 </p>
                                 {% else %}
-                                <p class="small text-muted">Address not available.</p>
+                                <p class="small text-muted mb-0">
+                                    {{ order_detail.shipping_info|linebreaksbr }}
+                                </p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
 
                 {% else %}
-                    <!-- Order List View -->
                     <h2 class="section-title mb-3">My Orders</h2>
 
-                    <!-- Filter Button -->
-                    <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
                         <button class="filter-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#orderFilters" aria-expanded="false">
                             <i class="bi bi-funnel"></i> Filters
                         </button>
+                        <span class="text-uppercase small fw-bold text-muted" style="letter-spacing: 0.1em;">
+                            {{ total_orders_count }} Result{% if total_orders_count != 1 %}s{% endif %}
+                        </span>
                     </div>
 
-                    <!-- Collapsible Filter Panel -->
                     <div class="collapse {% if current_status != 'all' or current_sort != 'newest' %}show{% endif %}" id="orderFilters">
                         <div class="filter-panel">
                             <form method="GET">
@@ -533,7 +616,6 @@
                                             <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Orders</option>
                                             <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
                                             <option value="shipped" {% if current_status == 'shipped' %}selected{% endif %}>Shipped</option>
-                                            <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Delivered</option>
                                             <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                                             <option value="processed" {% if current_status == 'processed' %}selected{% endif %}>Processed</option>
                                         </select>
@@ -554,13 +636,9 @@
                             <tr>
                                 <th>Order ID</th>
                                 <th>Date</th>
-                                <th>Total Amount</th>
-                                <th class="text-end">
-                                    <div class="d-flex justify-content-end align-items-baseline gap-2">
-                                        <span class="small text-muted fw-normal" style="font-size: 0.65rem; letter-spacing: 0;">{{ total_orders_count }} ORDERS</span>
-                                        <span>Status</span>
-                                    </div>
-                                </th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Last Update</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -568,53 +646,48 @@
                             <tr style="cursor: pointer;" onclick="window.location.href='?tab=orders&order_id={{ order.id }}'">
                                 <td class="fw-bold text-decoration-underline">#{{ order.id }}</td>
                                 <td>{{ order.order_date|date:"Y-m-d" }}</td>
-                                <td>${{ order.total_price }}</td>
-                                <td class="text-end">
+                                <td class="fw-bold">${{ order.total_price }}</td>
+                                <td>
                                     {% if order.status == 'Pending' %}
-                                        <span class="badge bg-warning text-dark border border-warning bg-opacity-25 text-uppercase px-3"
-                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                        <span class="badge bg-warning text-dark border border-warning bg-opacity-25 text-uppercase px-2"
                                               onclick="event.stopPropagation(); confirmCancel({{ order.id }});"
-                                              title="Click to Cancel Order">
-                                              {{ order.status }}
-                                        </span>
-                                    {% elif order.status == 'Processed' %}
-                                        <span class="badge bg-success text-success border border-success bg-opacity-10 text-uppercase px-3"
-                                              style="letter-spacing: 0.05em; cursor: pointer;"
-                                              onclick="event.stopPropagation(); showStatusInfo('Processed');">
-                                              {{ order.status }}
+                                              title="Click to Cancel">
+                                            Pending
                                         </span>
                                     {% elif order.status == 'Shipped' %}
-                                        <span class="badge bg-info text-info border border-info bg-opacity-10 text-uppercase px-3"
-                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                        <span class="badge bg-info text-info border border-info bg-opacity-10 text-uppercase px-2"
                                               onclick="event.stopPropagation(); showStatusInfo('Shipped');">
-                                              {{ order.status }}
+                                            Shipped
                                         </span>
                                     {% elif order.status == 'Cancelled' %}
-                                        <span class="badge bg-danger text-danger border border-danger bg-opacity-10 text-uppercase px-3"
-                                              style="letter-spacing: 0.05em; cursor: pointer;"
+                                        <span class="badge bg-danger text-danger border border-danger bg-opacity-10 text-uppercase px-2"
                                               onclick="event.stopPropagation(); showStatusInfo('Cancelled');">
-                                              {{ order.status }}
+                                            Cancelled
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-light text-dark border text-uppercase px-3" style="letter-spacing: 0.05em;">{{ order.status }}</span>
+                                        <span class="badge bg-light text-dark border text-uppercase px-2">{{ order.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">
+                                    {% if order.status_updated_at %}
+                                        {{ order.status_updated_at|date:"M d, H:i" }}
+                                    {% else %}
+                                        -
                                     {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="4" class="text-center py-5 text-muted">No orders found matching your criteria.</td></tr>
+                            <tr><td colspan="5" class="text-center py-5 text-muted">No orders found matching your criteria.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
 
-                    <!-- Pagination -->
                     {% if orders.has_other_pages %}
                     <div class="d-flex flex-column align-items-center mt-5">
                         <nav aria-label="Page navigation">
                             <ul class="pagination justify-content-center m-0">
                                 {% if orders.has_previous %}
-                                    <li class="page-item">
-                                        <a class="custom-page-link" href="?tab=orders&page={{ orders.previous_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&laquo;</a>
-                                    </li>
+                                    <li class="page-item"><a class="custom-page-link" href="?tab=orders&page={{ orders.previous_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&laquo;</a></li>
                                 {% else %}
                                     <li class="page-item disabled"><span class="custom-page-link">&laquo;</span></li>
                                 {% endif %}
@@ -623,22 +696,17 @@
                                     {% if i == orders.paginator.ELLIPSIS %}
                                         <li class="page-item disabled"><span class="custom-page-link bg-transparent border-0">...</span></li>
                                     {% else %}
-                                        <li class="page-item {% if i == orders.number %}active{% endif %}">
-                                            <a class="custom-page-link" href="?tab=orders&page={{ i }}&sort={{ current_sort }}&status={{ current_status }}">{{ i }}</a>
-                                        </li>
+                                        <li class="page-item {% if i == orders.number %}active{% endif %}"><a class="custom-page-link" href="?tab=orders&page={{ i }}&sort={{ current_sort }}&status={{ current_status }}">{{ i }}</a></li>
                                     {% endif %}
                                 {% endfor %}
 
                                 {% if orders.has_next %}
-                                    <li class="page-item">
-                                        <a class="custom-page-link" href="?tab=orders&page={{ orders.next_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&raquo;</a>
-                                    </li>
+                                    <li class="page-item"><a class="custom-page-link" href="?tab=orders&page={{ orders.next_page_number }}&sort={{ current_sort }}&status={{ current_status }}">&raquo;</a></li>
                                 {% else %}
                                     <li class="page-item disabled"><span class="custom-page-link">&raquo;</span></li>
                                 {% endif %}
                             </ul>
                         </nav>
-
                         <div class="jump-wrapper mt-3">
                             <input type="number" id="jumpPageInput" value="{{ orders.number }}" min="1" max="{{ orders.paginator.num_pages }}" class="jump-input">
                             <span class="text-muted small">/ {{ orders.paginator.num_pages }}</span>
@@ -647,8 +715,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- ✨✨✨ Modal for Order Cancellation Confirmation ✨✨✨ -->
-                    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal fade" id="cancelOrderModal" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content rounded-0 border-0 shadow">
                                 <div class="modal-header border-0 pb-0">
@@ -660,15 +727,14 @@
                                     <p class="small text-danger mt-2">This action cannot be undone.</p>
                                 </div>
                                 <div class="modal-footer border-0 justify-content-center pb-4">
-                                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">No, Keep Order</button>
-                                    <a href="#" id="confirmCancelBtn" class="btn btn-danger px-4">Yes, Cancel Order</a>
+                                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">No</button>
+                                    <a href="#" id="confirmCancelBtn" class="btn btn-danger px-4">Yes, Cancel</a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ✨✨✨ Modal for Status Info (Shipped/Cancelled/Processed) ✨✨✨ -->
-                    <div class="modal fade" id="statusInfoModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal fade" id="statusInfoModal" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content rounded-0 border-0 shadow">
                                 <div class="modal-header border-0 pb-0">
@@ -687,7 +753,6 @@
 
                 {% endif %}
 
-            <!-- 4. My Shopping Bag -->
             {% elif active_tab == 'bag' %}
                 <h2 class="section-title">My Shopping Bag</h2>
                 {% if cart_items %}
@@ -718,7 +783,6 @@
                                 </td>
                                 <td>USD {{ item.price }}</td>
                                 <td>
-                                    <!-- Simple quantity display for profile overview -->
                                     <div class="qty-control">
                                         <button class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
                                         <span class="qty-display">{{ item.quantity }}</span>
@@ -731,7 +795,8 @@
                         </tbody>
                     </table>
                     <div class="mt-4 text-end">
-                        <a href="{% url 'cart_view' %}" class="btn-action text-decoration-none">Go to Checkout</a>
+                        <div class="fs-4 fw-bold mb-3">Total: USD {{ cart_total }}</div>
+                        <a href="{% url 'checkout' %}" class="btn-action text-decoration-none px-5">Proceed to Checkout</a>
                     </div>
                 {% else %}
                     <div class="text-center py-5">
@@ -740,13 +805,12 @@
                     </div>
                 {% endif %}
 
-            <!-- 5. My Reviews -->
             {% elif active_tab == 'reviews' %}
                 <h2 class="section-title">My Reviews</h2>
                 <div class="review-list">
                     {% for review in reviews %}
                     <div class="review-item">
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <a href="{% url 'product_detail' review.product.id %}" class="review-product-link">{{ review.product.product_name }}</a>
                                 <div class="text-warning small my-1">
@@ -754,11 +818,69 @@
                                 </div>
                                 <div class="text-muted small">{{ review.created_at|date:"M d, Y" }}</div>
                             </div>
-                            <div>
-                                <a href="{% url 'delete_review' review.id %}" class="btn-outline-action text-danger border-danger" onclick="return confirm('Delete this review?')">Delete</a>
+                            
+                            <div class="d-flex gap-4 align-items-center mt-1">
+                                {% if not review.appended_comment %}
+                                <button class="text-action-link" data-bs-toggle="modal" data-bs-target="#appendReviewModal{{ review.id }}">
+                                    <i class="bi bi-pencil-square"></i> Update
+                                </button>
+                                {% endif %}
+                                <a href="{% url 'delete_review' review.id %}" class="text-action-link text-danger" onclick="return confirm('Delete this review?')">
+                                    <i class="bi bi-trash3"></i> Delete
+                                </a>
                             </div>
                         </div>
+                        
                         <p class="mt-3 text-secondary">{{ review.comment }}</p>
+
+                        {% if review.appended_comment %}
+                        <div class="appended-review-box mt-3 pt-3" style="border-top: 1px dashed #eee;">
+                            <div class="appended-title" style="font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">
+                                Update <span class="text-muted fw-normal">({{ review.appended_at|date:"M d, Y" }})</span>
+                            </div>
+                            <p class="mt-1 text-secondary mb-0">{{ review.appended_comment }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if review.vendor_reply %}
+                            <div class="bg-light p-3 mt-3 border-start border-3 border-dark">
+                                <small class="text-uppercase fw-bold d-block mb-1">Response from Store:</small>
+                                <span class="text-muted small">{{ review.vendor_reply }}</span>
+                            </div>
+                        {% endif %}
+
+                        {% if not review.appended_comment %}
+                        <div class="modal fade" id="appendReviewModal{{ review.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow rounded-0">
+                                    <div class="modal-header border-0 pb-0">
+                                        <h5 class="modal-title font-serif text-uppercase">Add an Update</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <p class="text-muted small mb-4">Share your long-term experience with this piece. You can only add an update once.</p>
+                                        <form method="POST" action="{% url 'append_review' review.id %}">
+                                            {% csrf_token %}
+                                            <div class="form-group mb-4">
+                                                <textarea name="appended_comment" class="form-control bg-light border-0" rows="4" placeholder="Write your update here..." required>{{ review.draft_append|default:"" }}</textarea>
+                                            </div>
+                                            <button type="submit" class="btn-action w-100">Submit Update</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if review.draft_append %}
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                var appendModal = new bootstrap.Modal(document.getElementById('appendReviewModal{{ review.id }}'));
+                                appendModal.show();
+                            });
+                        </script>
+                        {% endif %}
+
                     </div>
                     {% empty %}
                     <p class="text-muted">You haven't written any reviews yet.</p>
@@ -769,7 +891,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="bg-black text-white py-5 text-center mt-auto">
         <div class="container">
             <div class="text-uppercase small" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 1px;">
@@ -787,11 +908,26 @@
                 setTimeout(() => overlay.querySelector('.search-input').focus(), 100);
             }
         }
+
         function googleTranslateElementInit() {
-            new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'en,zh-CN,zh-TW,ja,fr,de,es', autoDisplay: false}, 'google_translate_element');
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,zh-CN',
+                autoDisplay: false
+            }, 'google_translate_element');
         }
-        function setLanguage(lang) { document.cookie = "googtrans=/en/" + lang + "; path=/"; location.reload(); }
-        function setFontSize(size) { document.documentElement.style.fontSize = size; localStorage.setItem('userFontSize', size); }
+
+        function setLanguage(lang) {
+            document.cookie = "googtrans=/en/" + lang + "; path=/; domain=" + window.location.hostname;
+            document.cookie = "googtrans=/en/" + lang + "; path=/";
+            location.reload();
+        }
+
+        function setFontSize(size) {
+            document.documentElement.style.fontSize = size;
+            localStorage.setItem('userFontSize', size);
+        }
+
         const script = document.createElement('script');
         script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
         document.body.appendChild(script);
@@ -807,29 +943,34 @@
             .then(data => { if(data.status === 'success') location.reload(); });
         }
 
-        // ✨ Page Jump Logic for Orders
+        // Page Jump Logic
         function jumpToPage() {
             const pageNum = document.getElementById('jumpPageInput').value;
             if (pageNum) {
                 const urlParams = new URLSearchParams(window.location.search);
                 urlParams.set('page', pageNum);
-                // Ensure 'tab' is kept
                 if(!urlParams.has('tab')) urlParams.set('tab', 'orders');
                 window.location.search = urlParams.toString();
             }
         }
 
-        // ✨ Order Status Logic ✨
-        const cancelModal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
-        const infoModal = new bootstrap.Modal(document.getElementById('statusInfoModal'));
+        // Order Status Logic
+        const cancelModalEl = document.getElementById('cancelOrderModal');
+        const infoModalEl = document.getElementById('statusInfoModal');
+
+        // Check if elements exist before initializing BS Modal
+        let cancelModal, infoModal;
+        if(cancelModalEl) cancelModal = new bootstrap.Modal(cancelModalEl);
+        if(infoModalEl) infoModal = new bootstrap.Modal(infoModalEl);
 
         function confirmCancel(orderId) {
-            // Set the href for the confirmation button
+            if(!cancelModal) return;
             document.getElementById('confirmCancelBtn').href = "/order/cancel/" + orderId + "/";
             cancelModal.show();
         }
 
         function showStatusInfo(status) {
+            if(!infoModal) return;
             let message = "";
             if (status === 'Shipped') {
                 message = "Order has been shipped, cannot cancel order.";
@@ -838,10 +979,22 @@
             } else if (status === 'Processed') {
                 message = "Order is already processed.";
             }
-
             document.getElementById('statusInfoText').innerText = message;
             infoModal.show();
         }
+
+        // ✨✨✨ 提示条自动淡出逻辑 ✨✨✨
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.auto-close-alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    if (document.body.contains(alert)) {
+                        let bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 3500); 
+            });
+        });
     </script>
 </body>
 </html>

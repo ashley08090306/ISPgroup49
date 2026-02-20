@@ -3,19 +3,20 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from core.models import User
-# ✨ 核心修改：引入 OrderItem
-from .models import ShippingAddress, Product, Category, Tag, Order, OrderItem, ProductImage, ShopProfile, Review, ReviewMedia, Cart, CartItem
+# ✨ 核心修改：引入 ReviewLike
+from .models import ShippingAddress, Product, Category, Tag, Order, OrderItem, ProductImage, ShopProfile, Review, ReviewMedia, Cart, CartItem, ReviewLike
 from django.db.models import Sum, Q, F, Avg, Min, Max
 from django.contrib.auth import authenticate
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
-from django.db import OperationalError
+from django.db import OperationalError, transaction # ✨ 核心修改：引入 transaction 用于并发安全锁
 import json, re
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib import messages
 from .utils import sensitive_filter
-from django.utils import timezone # ✨ 核心修改：必须引入
+from django.utils import timezone
+from datetime import timedelta
 
 # ==================== 首页与搜索 (多语言支持 + 停用词优化版) ====================
 
@@ -283,6 +284,13 @@ def user_profile(request):
 
     elif active_tab == 'reviews':
         reviews = Review.objects.filter(user=user).select_related('product').order_by('-created_at')
+        
+        # ✨ 新增：提取可能被敏感词拦截的追评草稿
+        for r in reviews:
+            draft = request.session.pop(f'draft_append_{r.id}', None)
+            if draft is not None:
+                r.draft_append = draft
+                
         context['reviews'] = reviews
 
     return render(request, 'user_profile.html', context)
@@ -370,6 +378,40 @@ def delete_review(request, review_id):
     messages.success(request, 'Review deleted.')
     return redirect(f"{reverse('user_profile')}?tab=reviews")
 
+# ✨✨✨ 新增：追加评论接口 (Append Review) ✨✨✨
+@login_required
+def append_review(request, review_id):
+    # 确保只有写这条评论的本人才能追加
+    review = get_object_or_404(Review, id=review_id, user=request.user)
+
+    if request.method == 'POST':
+        # 业务逻辑：只允许追加一次
+        if review.appended_comment:
+            messages.error(request, "You have already added an update to this review.")
+            return redirect(f"{reverse('user_profile')}?tab=reviews")
+
+        append_text = request.POST.get('appended_comment', '').strip()
+        
+        if not append_text:
+            messages.error(request, "Update content cannot be empty.")
+            return redirect(f"{reverse('user_profile')}?tab=reviews")
+
+        # ✨ 敏感词拦截核心逻辑
+        is_sensitive, filtered_text = sensitive_filter.filter(append_text)
+        
+        if is_sensitive:
+            # 命中敏感词：将原文字存入 session，防止清空
+            request.session[f'draft_append_{review.id}'] = append_text
+            messages.error(request, "Warning: Your update contains inappropriate language (such as profanity or sensitive topics). Please edit before posting.")
+        else:
+            # 未命中：允许保存
+            review.appended_comment = append_text
+            review.appended_at = timezone.now()
+            review.save()
+            messages.success(request, "Your review has been successfully updated.")
+
+    return redirect(f"{reverse('user_profile')}?tab=reviews")
+
 # ==================== 商品详情与评论 ====================
 
 def product_detail(request, product_id):
@@ -387,12 +429,16 @@ def product_detail(request, product_id):
 
     # ✅ IMPORTANT: compute has_purchased for BOTH GET and POST
     has_purchased = False
+    has_reviewed = False # ✨ 新增变量：判断是否已经评论过
     if request.user.is_authenticated:
         has_purchased = OrderItem.objects.filter(
             order__user=request.user,
             order__status='Processed',   # only "Processed" counts as purchased
             product=product
         ).exists()
+
+        # ✨ 查询该用户是否已经对该商品发表过评论
+        has_reviewed = Review.objects.filter(product=product, user=request.user).exists()
 
     # Handle review submission (POST)
     if request.method == 'POST':
@@ -401,6 +447,11 @@ def product_detail(request, product_id):
 
         if not has_purchased:
             messages.error(request, "Only customers who have purchased (Processed) can leave a review.")
+            return redirect('product_detail', product_id=product.id)
+
+        # ✨ 核心拦截：如果已经评论过，拒绝提交
+        if has_reviewed:
+            messages.error(request, "You have already reviewed this product. Multiple reviews are not allowed.")
             return redirect('product_detail', product_id=product.id)
 
         if getattr(request.user, 'role', '') == 'vendor':
@@ -474,10 +525,17 @@ def product_detail(request, product_id):
         percent = (count / total_reviews * 100) if total_reviews > 0 else 0
         distribution.append({'star': star, 'percent': percent, 'count': count})
 
+    # ✨✨✨ 获取当前用户点赞过的评论ID集合 (用于前端爱心实心状态) ✨✨✨
+    liked_review_ids = set()
+    if request.user.is_authenticated:
+        liked_review_ids = set(ReviewLike.objects.filter(user=request.user, review__product=product).values_list('review_id', flat=True))
+
     reviews_list = []
     for r in reviews_qs:
         r.filled_stars = [1] * r.rating
         r.empty_stars = [1] * (5 - r.rating)
+        # ✨ 附加点赞状态到对象上
+        r.is_liked_by_user = r.id in liked_review_ids
         reviews_list.append(r)
 
     context = {
@@ -488,6 +546,7 @@ def product_detail(request, product_id):
         'avg_rating': avg_rating,
         'distribution': distribution,
         'has_purchased': has_purchased,
+        'has_reviewed': has_reviewed, # ✨ 传给前端，前端可以根据这个变量隐藏“Write a Review”按钮
 
         # ✨ 传回前端，用于展示红框警告并保留用户输入
         'error_message': error_message,
@@ -512,10 +571,17 @@ def all_reviews(request, product_id):
         percent = (count / total_reviews * 100) if total_reviews > 0 else 0
         distribution.append({'star': star, 'percent': percent, 'count': count})
 
+    # ✨✨✨ 同步添加点赞状态判断 ✨✨✨
+    liked_review_ids = set()
+    if request.user.is_authenticated:
+        liked_review_ids = set(ReviewLike.objects.filter(user=request.user, review__product=product).values_list('review_id', flat=True))
+
     reviews_list = []
     for r in reviews_qs:
         r.filled_stars = [1] * r.rating
         r.empty_stars = [1] * (5 - r.rating)
+        # ✨ 附加点赞状态到对象上
+        r.is_liked_by_user = r.id in liked_review_ids
         reviews_list.append(r)
 
     context = {
@@ -526,6 +592,58 @@ def all_reviews(request, product_id):
         'distribution': distribution,
     }
     return render(request, 'all_reviews.html', context)
+
+# ==================== ✨ 点赞功能 (API) ✨ ====================
+@login_required
+def toggle_review_like(request, review_id):
+    if request.method == 'POST':
+        # ✨ 频率限制 (Rate Limiting) 核心逻辑：同一用户 1 分钟内最多点赞 5 次
+        one_minute_ago = timezone.now() - timedelta(minutes=1)
+        recent_likes_count = ReviewLike.objects.filter(
+            user=request.user,
+            created_at__gte=one_minute_ago
+        ).count()
+
+        if recent_likes_count >= 5:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'You are exploring too fast. Please take a moment.'
+            }, status=429)
+
+        review = get_object_or_404(Review, id=review_id)
+
+        # 提取真实 IP (为策略三的异常检测预留特征)
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        # 核心防刷锁：使用数据库事务确保并发安全
+        with transaction.atomic():
+            like_record = ReviewLike.objects.filter(review=review, user=request.user).first()
+
+            if like_record:
+                # 已点赞 -> 取消点赞
+                like_record.delete()
+                Review.objects.filter(id=review.id).update(like_count=F('like_count') - 1)
+                is_liked = False
+            else:
+                # 未点赞 -> 添加点赞，并记录 IP
+                ReviewLike.objects.create(review=review, user=request.user, ip_address=ip)
+                Review.objects.filter(id=review.id).update(like_count=F('like_count') + 1)
+                is_liked = True
+
+            current_likes = Review.objects.get(id=review.id).like_count
+
+        return JsonResponse({
+            'status': 'success',
+            'is_liked': is_liked,
+            'like_count': current_likes
+        })
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid method.'}, status=400)
+
 
 # ==================== 购物车系统 (Persistent Updated) ====================
 

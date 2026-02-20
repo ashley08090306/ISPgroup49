@@ -54,6 +54,9 @@ urlpatterns = [
     path('order/process/<int:order_id>/', views.order_process, name='order_process'),
     path('product/<int:product_id>/reviews/', views.all_reviews, name='all_reviews'),
     path('order/cancel/<int:order_id>/', views.cancel_order, name='cancel_order'),
+
+    path('api/reviews/<int:review_id>/like/', views.toggle_review_like, name='toggle_review_like'),
+    path("profile/append-review/<int:review_id>/", views.append_review, name="append_review"),
 ]
 
 

@@ -188,25 +188,24 @@
         .btn-write-review { background: none; border: 1px solid black; padding: 10px 25px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.1em; transition: all 0.2s; }
         .btn-write-review:hover { background: black; color: white; }
 
-        /* Horizontal Review Scroller (New) */
+        /* Horizontal Review Scroller */
         .review-scroller {
             display: flex;
             overflow-x: auto;
             gap: 20px;
             padding-bottom: 20px;
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            -webkit-overflow-scrolling: touch;
             scroll-snap-type: x mandatory;
-            margin-right: -20px; /* Bleed to right edge on mobile */
+            margin-right: -20px;
             padding-right: 20px;
         }
-        /* Hide scrollbar */
         .review-scroller::-webkit-scrollbar { display: none; }
         .review-scroller { -ms-overflow-style: none; scrollbar-width: none; }
 
         .review-card-horizontal {
             min-width: 320px;
             max-width: 320px;
-            background: #f5f5f7; /* App Store Grey */
+            background: #f5f5f7;
             padding: 25px;
             border-radius: 16px;
             scroll-snap-align: start;
@@ -225,12 +224,57 @@
         .review-media-grid { display: flex; gap: 8px; margin-top: auto; }
         .review-media-item { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
 
+        /* Appended Comment Box */
+        .appended-review-box {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+        .appended-review-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1d1d1f;
+            margin-bottom: 5px;
+        }
+        .appended-review-date {
+            font-weight: normal;
+            color: #86868b;
+            text-transform: none;
+            margin-left: 5px;
+        }
+
         /* Vendor Reply */
         .vendor-reply-box {
             background-color: #fff; border-radius: 8px; padding: 10px; margin-top: 15px; border-left: 3px solid #000;
         }
         .vendor-reply-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
         .vendor-reply-text { font-size: 0.85rem; color: #333; line-height: 1.4; font-style: italic; }
+
+        /* Review Like Action Row */
+        .review-action-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .btn-like {
+            background: none;
+            border: none;
+            font-size: 0.95rem;
+            color: #86868b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+            font-weight: 500;
+        }
+        .btn-like:hover { color: #1d1d1f; }
+        .btn-like i.text-dark { color: #1d1d1f !important; }
 
         /* "See All" Button */
         .see-all-btn { font-size: 1rem; color: #007aff; cursor: pointer; border: none; background: none; font-weight: 500; float: right; margin-left: 10px; }
@@ -328,6 +372,17 @@
     </header>
 
     <div class="detail-container">
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags != 'error' %}
+                    <div class="alert alert-dark alert-dismissible fade show rounded-0 mb-4 shadow-sm auto-close-alert" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
 
         {% if error and not has_error_modal %}
         <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert" style="border-left: 5px solid red;">
@@ -461,12 +516,16 @@
                     {% endfor %}
                 </div>
 
-            <div class="write-review-btn-container">
+                <div class="write-review-btn-container">
                     {% if user.is_authenticated %}
                         {% if user.role != 'vendor' and has_purchased %}
-                            <button type="button" class="btn-write-review" data-bs-toggle="modal" data-bs-target="#writeReviewModal">
-                                <i class="bi bi-pencil-square me-2"></i>Write a Review
-                            </button>
+                            {% if has_reviewed %}
+                                <p class="text-muted" style="font-style: italic; font-size: 0.9rem;">You have already shared your experience for this piece.</p>
+                            {% else %}
+                                <button type="button" class="btn-write-review" data-bs-toggle="modal" data-bs-target="#writeReviewModal">
+                                    <i class="bi bi-pencil-square me-2"></i>Write a Review
+                                </button>
+                            {% endif %}
                         {% elif not has_purchased %}
                             <p class="text-muted">You must have purchased this product to leave a review.</p>
                         {% endif %}
@@ -477,6 +536,7 @@
                     {% endif %}
                 </div>
             </div>
+
             <div class="review-scroller">
                 {% for review in reviews|slice:":5" %}
                 <div class="review-card-horizontal">
@@ -490,6 +550,15 @@
                             {% for i in review.empty_stars %}<i class="bi bi-star"></i>{% endfor %}
                         </div>
                         <div class="review-text">{{ review.comment }}</div>
+
+                        {% if review.appended_comment %}
+                        <div class="appended-review-box">
+                            <div class="appended-review-title">
+                                Update <span class="appended-review-date">({{ review.appended_at|date:"M d, Y" }})</span>
+                            </div>
+                            <div class="review-text" style="margin-bottom: 5px;">{{ review.appended_comment }}</div>
+                        </div>
+                        {% endif %}
 
                         {% if review.vendor_reply %}
                         <div class="vendor-reply-box">
@@ -513,6 +582,14 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+
+                    <div class="review-action-row">
+                        <button class="btn-like" onclick="toggleLike({{ review.id }}, this)">
+                            <i class="bi {% if review.is_liked_by_user %}bi-heart-fill text-dark{% else %}bi-heart{% endif %}"></i>
+                            <span class="like-count">{{ review.like_count|default:"0" }}</span>
+                        </button>
+                    </div>
+
                 </div>
                 {% empty %}
                 <div class="text-center py-5 text-muted w-100">No reviews yet.</div>
@@ -572,6 +649,32 @@
                             <button type="submit" class="btn btn-dark w-100 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Submit Review</button>
                         </form>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="likeLoginModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-0">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-5 text-center">
+                        <h5 class="mb-3" style="font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: 0.05em;">Join the Community</h5>
+                        <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">Sign in to appreciate this insight and resonate with like-minded guests.</p>
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-dark w-100 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Sign In / Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1055;">
+            <div id="rateLimitToast" class="toast align-items-center text-white bg-black border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body" style="font-size: 0.85rem; letter-spacing: 0.05em; padding: 12px 20px;">
+                        <i class="bi bi-info-circle me-2"></i> You are exploring too fast. Please take a moment.
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
         </div>
@@ -731,20 +834,68 @@
             const hiddenReviews = document.querySelectorAll('.review-card.hidden');
             const btn = document.getElementById('seeAllBtn');
 
-            // Just reveal them. In a real App Store it opens a new page,
-            // but expanding is smoother for a web view without new routing.
             hiddenReviews.forEach(card => {
                 card.classList.remove('hidden');
             });
 
-            // Hide the button after expanding
             if(btn) btn.style.display = 'none';
         }
 
-        // Debug
         document.getElementById('reviewForm').addEventListener('submit', function() {
             console.log('Submitting review...');
         });
+
+        // === AJAX Like Feature ===
+        const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+        function toggleLike(reviewId, btnElement) {
+            if (!isAuthenticated) {
+                const loginModal = new bootstrap.Modal(document.getElementById('likeLoginModal'));
+                loginModal.show();
+                return;
+            }
+
+            btnElement.disabled = true;
+
+            fetch(`/api/reviews/${reviewId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                if (res.status === 429) {
+                    const toastEl = document.getElementById('rateLimitToast');
+                    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+                    toast.show();
+                    
+                    btnElement.disabled = false;
+                    return Promise.reject('Rate limited');
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    const icon = btnElement.querySelector('i');
+                    const countSpan = btnElement.querySelector('.like-count');
+                    
+                    if (data.is_liked) {
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill', 'text-dark');
+                    } else {
+                        icon.classList.remove('bi-heart-fill', 'text-dark');
+                        icon.classList.add('bi-heart');
+                    }
+                    countSpan.textContent = data.like_count;
+                }
+                btnElement.disabled = false;
+            })
+            .catch(err => {
+                if (err !== 'Rate limited') console.error("Error toggling like:", err);
+                btnElement.disabled = false;
+            });
+        }
 
         // === Search & UI Utils ===
         function toggleSearch() {
@@ -756,6 +907,19 @@
         function setLanguage(lang) { document.cookie = "googtrans=/en/" + lang + "; path=/"; location.reload(); }
         function setFontSize(size) { document.documentElement.style.fontSize = size; localStorage.setItem('userFontSize', size); }
         const s = document.createElement('script'); s.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"; document.body.appendChild(s);
+
+        // ✨✨✨ 修复2：提示条自动淡出逻辑 ✨✨✨
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.auto-close-alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    if (document.body.contains(alert)) {
+                        let bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 3500); 
+            });
+        });
     </script>
     
     {% if has_error_modal %}

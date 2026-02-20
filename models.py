@@ -115,7 +115,7 @@ class Order(models.Model):
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # 买家
-    
+
     # ✨ 改动 1: 移除 product 和 quantity (移到 OrderItem)
     # ✨ 改动 2: 添加状态变更时间 (老师要求)
     status_updated_at = models.DateTimeField(null=True, blank=True)
@@ -124,7 +124,7 @@ class Order(models.Model):
     shipped_at = models.DateTimeField(null=True, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
-    
+
     order_date = models.DateTimeField(auto_now_add=True)  # 订单日期
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')  # 订单状态
 
@@ -148,7 +148,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    
+
     # 记录购买时的单价 (防止商品后续改价影响历史订单)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -182,15 +182,38 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    appended_comment = models.TextField(blank=True, null=True)
+    appended_at = models.DateTimeField(blank=True, null=True)
+
     # ✨ 商家回复字段
     vendor_reply = models.TextField(blank=True, null=True)
     replied_at = models.DateTimeField(blank=True, null=True)
+
+    like_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"Review {self.id} by {self.user.username}"
 
     class Meta:
         ordering = ['-created_at']
+
+# ✨✨✨ 新增：点赞记录表 (核心防刷机制) ✨✨✨
+class ReviewLike(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='likes')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    # 记录点赞时的 IP，为后续策略三（异常检测）留出特征空间
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # ✨ 数据库级硬限制：一个用户对同一条评论只能有一条点赞记录
+        constraints = [
+            models.UniqueConstraint(fields=['review', 'user'], name='unique_review_like')
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} liked Review {self.review.id}"
 
 class ReviewMedia(models.Model):
     MEDIA_TYPES = (

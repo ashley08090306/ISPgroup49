@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -100,9 +99,65 @@
 
         /* Custom Checkbox */
         .custom-checkbox { width: 18px; height: 18px; accent-color: black; cursor: pointer; }
+
+        /* === LUXURY TOAST NOTIFICATION (NEW) === */
+        .toast-container-custom {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .lux-toast {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--chanel-black);
+            color: var(--chanel-black);
+            min-width: 300px;
+            padding: 18px 25px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transform: translateX(120%);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .lux-toast.show { transform: translateX(0); }
+        .lux-toast-content {
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .lux-toast-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding-left: 15px;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
+
+    <div id="toastContainer" class="toast-container-custom">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="lux-toast" role="alert">
+                    <div class="lux-toast-content">
+                        {% if message.tags == 'error' %}
+                            <i class="bi bi-exclamation-circle text-danger me-2"></i>
+                        {% else %}
+                            <i class="bi bi-check2-circle text-success me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                    <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
     <div class="navbar-top-row">
         <div id="google_translate_element"></div>
@@ -141,7 +196,6 @@
 
         {% if cart_items %}
         <div class="row">
-            <!-- Left: Cart Items -->
             <div class="col-lg-8 pe-lg-5">
                 <div class="row cart-header">
                     <div class="col-1 text-center"><i class="bi bi-check-square-fill"></i></div>
@@ -186,13 +240,12 @@
                 {% endfor %}
             </div>
 
-            <!-- Right: Summary -->
             <div class="col-lg-4">
                 <div class="summary-box">
                     <h3 class="summary-title">Summary</h3>
                     <div class="summary-row">
                         <span>Subtotal</span>
-                        <span>USD {{ cart_items|length|default:"0.00" }} items</span> <!-- Placeholder logic for count -->
+                        <span>USD {{ cart_items|length|default:"0.00" }} items</span> 
                     </div>
                     <div class="summary-row text-muted">
                         <span>Shipping</span>
@@ -210,13 +263,68 @@
         {% else %}
             <div class="text-center py-5">
                 <p class="mb-4 text-muted">Your shopping bag is empty.</p>
-                <a href="{% url 'home' %}" class="btn btn-dark rounded-0 px-5 py-3 text-uppercase">Start Shopping</a>
+                <a href="{% url 'home' %}" class="btn-dark rounded-0 px-5 py-3 text-uppercase text-decoration-none text-white d-inline-block" style="background-color: black;">Start Shopping</a>
             </div>
         {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // === ✨✨✨ NEW: 全局自定义精美弹窗 (Toast) 替代 alert() ✨✨✨ ===
+        function showCustomToast(message, isError = false) {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-container-custom';
+                document.body.appendChild(container);
+            }
+
+            const toastEl = document.createElement('div');
+            toastEl.className = 'lux-toast';
+            toastEl.setAttribute('role', 'alert');
+            
+            toastEl.innerHTML = `
+                <div class="lux-toast-content">
+                    <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            container.appendChild(toastEl);
+            
+            // Trigger animation
+            setTimeout(() => toastEl.classList.add('show'), 100);
+            
+            // Auto remove
+            const timer = setTimeout(() => {
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 500);
+            }, 3500);
+
+            // Manual close
+            toastEl.querySelector('.lux-toast-close').onclick = () => {
+                clearTimeout(timer);
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 500);
+            };
+        }
+
+        // Display Django messages as toasts on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const existingToasts = document.querySelectorAll('.lux-toast');
+            existingToasts.forEach((t, index) => {
+                setTimeout(() => {
+                    t.classList.add('show');
+                    setTimeout(() => {
+                        t.classList.remove('show');
+                        setTimeout(() => t.remove(), 500);
+                    }, 3500 + (index * 500));
+                }, 100 + (index * 200));
+            });
+        });
+
         function updateQty(productId, action) {
             fetch("{% url 'update_cart' %}", {
                 method: "POST",
@@ -228,10 +336,14 @@
             })
             .then(res => res.json())
             .then(data => {
+                // ✨✨✨ 修改：不再使用 alert()，而是调用 showCustomToast ✨✨✨
                 if(data.status === 'success') {
                     location.reload();
+                } else {
+                    showCustomToast(data.message, true);
                 }
-            });
+            })
+            .catch(err => console.error("Error updating cart:", err));
         }
 
         // === Language & Text Size Logic ===

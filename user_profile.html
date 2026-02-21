@@ -1,5 +1,5 @@
 {% load static %}
-<!DOCTYPE html>
+{% load tz %} <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -247,6 +247,44 @@
         .qty-btn { background: none; border: none; padding: 2px 8px; cursor: pointer; }
         .qty-display { padding: 0 8px; font-size: 0.85rem; }
 
+        /* === LUXURY TOAST NOTIFICATION (NEW) === */
+        .toast-container-custom {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .lux-toast {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--chanel-black);
+            color: var(--chanel-black);
+            min-width: 300px;
+            padding: 18px 25px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transform: translateX(120%);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .lux-toast.show { transform: translateX(0); }
+        .lux-toast-content {
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .lux-toast-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding-left: 15px;
+            opacity: 0.5;
+        }
+
         @media (max-width: 768px) {
             .dashboard-container { flex-direction: column; }
             .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #eee; padding: 20px; display: flex; overflow-x: auto; gap: 20px; }
@@ -257,6 +295,21 @@
     </style>
 </head>
 <body>
+
+    <div id="toastContainer" class="toast-container-custom">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="lux-toast" role="alert">
+                    <div class="lux-toast-content">
+                        {% if message.tags == 'error' %}<i class="bi bi-exclamation-circle me-2 text-danger"></i>{% else %}<i class="bi bi-check2-circle me-2 text-success"></i>{% endif %}
+                        {{ message }}
+                    </div>
+                    <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <div id="searchOverlay" class="search-overlay">
         <div class="search-header">
             <h2 class="search-title">SEARCH</h2>
@@ -328,15 +381,6 @@
         </div>
 
         <div class="main-content">
-            
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-dark alert-dismissible fade show rounded-0 mb-4 shadow-sm auto-close-alert" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
 
             {% if active_tab == 'profile' %}
                 <h2 class="section-title">My Profile</h2>
@@ -543,31 +587,33 @@
                             <div class="bg-light p-4">
                                 <h6 class="text-uppercase mb-3 font-serif">Order Timeline</h6>
 
+                                {% timezone "Asia/Shanghai" %}
                                 <p class="small mb-2 d-flex justify-content-between">
                                     <strong>Placed:</strong>
-                                    <span>{{ order_detail.order_date|date:"M d, H:i" }}</span>
+                                    <span>{{ order_detail.order_date|date:"M d, H:i" }} (CST)</span>
                                 </p>
 
                                 {% if order_detail.shipped_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-success">
                                     <strong>Shipped:</strong>
-                                    <span>{{ order_detail.shipped_at|date:"M d, H:i" }}</span>
+                                    <span>{{ order_detail.shipped_at|date:"M d, H:i" }} (CST)</span>
                                 </p>
                                 {% endif %}
 
                                 {% if order_detail.processed_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-success">
                                     <strong>Processed:</strong>
-                                    <span>{{ order_detail.processed_at|date:"M d, H:i" }}</span>
+                                    <span>{{ order_detail.processed_at|date:"M d, H:i" }} (CST)</span>
                                 </p>
                                 {% endif %}
 
                                 {% if order_detail.cancelled_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-danger">
                                     <strong>Cancelled:</strong>
-                                    <span>{{ order_detail.cancelled_at|date:"M d, H:i" }}</span>
+                                    <span>{{ order_detail.cancelled_at|date:"M d, H:i" }} (CST)</span>
                                 </p>
                                 {% endif %}
+                                {% endtimezone %}
 
                                 <hr>
                                 <h6 class="text-uppercase mb-3 font-serif">Shipping To</h6>
@@ -645,6 +691,8 @@
                             {% for order in orders %}
                             <tr style="cursor: pointer;" onclick="window.location.href='?tab=orders&order_id={{ order.id }}'">
                                 <td class="fw-bold text-decoration-underline">#{{ order.id }}</td>
+                                
+                                {% timezone "Asia/Shanghai" %}
                                 <td>{{ order.order_date|date:"Y-m-d" }}</td>
                                 <td class="fw-bold">${{ order.total_price }}</td>
                                 <td>
@@ -675,6 +723,7 @@
                                         -
                                     {% endif %}
                                 </td>
+                                {% endtimezone %}
                             </tr>
                             {% empty %}
                             <tr><td colspan="5" class="text-center py-5 text-muted">No orders found matching your criteria.</td></tr>
@@ -899,8 +948,64 @@
         </div>
     </footer>
 
+    <div id="toastContainer" class="toast-container-custom">
+        </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // === ✨✨✨ NEW: 全局自定义精美弹窗 (Toast) 替代 alert() ✨✨✨ ===
+        function showCustomToast(message, isError = false) {
+            let container = document.getElementById('toastContainer');
+
+            const toastEl = document.createElement('div');
+            toastEl.className = 'lux-toast';
+            toastEl.setAttribute('role', 'alert');
+            
+            toastEl.innerHTML = `
+                <div class="lux-toast-content">
+                    <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            container.appendChild(toastEl);
+            
+            // 触发动画
+            setTimeout(() => toastEl.classList.add('show'), 100);
+            
+            // 3.5秒后自动移除
+            const timer = setTimeout(() => {
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 500);
+            }, 3500);
+
+            // 手动关闭
+            toastEl.querySelector('.lux-toast-close').onclick = () => {
+                clearTimeout(timer);
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 500);
+            };
+        }
+
+        // 把 Django 传来的后台 messages 转换为 Toast 显示
+        document.addEventListener('DOMContentLoaded', () => {
+            const djangoMessages = [
+                {% if messages %}
+                    {% for message in messages %}
+                        { text: "{{ message|escapejs }}", isError: {% if message.tags == 'error' %}true{% else %}false{% endif %} },
+                    {% endfor %}
+                {% endif %}
+            ];
+
+            djangoMessages.forEach((msg, index) => {
+                // 错开一点时间，防止多个消息重叠太快
+                setTimeout(() => {
+                    showCustomToast(msg.text, msg.isError);
+                }, 100 + (index * 400));
+            });
+        });
+
         function toggleSearch() {
             const overlay = document.getElementById('searchOverlay');
             overlay.classList.toggle('active');
@@ -940,7 +1045,15 @@
                 body: JSON.stringify({ product_id: productId, action: action })
             })
             .then(res => res.json())
-            .then(data => { if(data.status === 'success') location.reload(); });
+            .then(data => { 
+                if(data.status === 'success') {
+                    location.reload(); 
+                } else {
+                    // ✨✨✨ 调用高级 Toast 而不是 alert()
+                    showCustomToast(data.message, true);
+                }
+            })
+            .catch(err => console.log('Cart update failed:', err));
         }
 
         // Page Jump Logic
@@ -958,7 +1071,6 @@
         const cancelModalEl = document.getElementById('cancelOrderModal');
         const infoModalEl = document.getElementById('statusInfoModal');
 
-        // Check if elements exist before initializing BS Modal
         let cancelModal, infoModal;
         if(cancelModalEl) cancelModal = new bootstrap.Modal(cancelModalEl);
         if(infoModalEl) infoModal = new bootstrap.Modal(infoModalEl);
@@ -982,19 +1094,6 @@
             document.getElementById('statusInfoText').innerText = message;
             infoModal.show();
         }
-
-        // ✨✨✨ 提示条自动淡出逻辑 ✨✨✨
-        document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.auto-close-alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    if (document.body.contains(alert)) {
-                        let bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    }
-                }, 3500); 
-            });
-        });
     </script>
 </body>
 </html>

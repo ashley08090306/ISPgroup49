@@ -1,8 +1,10 @@
-
+{% load static %}
+{% load tz %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orders - Vendor Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -172,9 +174,51 @@
             color: #fff;
             border-color: #000;
         }
+
+        /* === 商家专属的高级黑金 Toast === */
+        .toast-container-custom {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 9999;
+        }
+        .admin-toast {
+            background: #111;
+            color: #fff;
+            border-left: 4px solid #d4af37; /* 侧边金色点缀 */
+            min-width: 300px;
+            padding: 16px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-radius: 4px;
+        }
+        .admin-toast.show { transform: translateX(0); }
+        .admin-toast-content {
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+        .admin-toast-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding-left: 15px;
+        }
+        .admin-toast-close:hover { color: #fff; }
+        .admin-toast.error { border-left-color: #ff6b6b; } /* 错误时显示红边 */
     </style>
 </head>
 <body>
+    <div id="toastContainer" class="toast-container-custom"></div>
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-2 sidebar p-0">
@@ -184,7 +228,6 @@
 
                 <nav class="mt-3">
                     <a href="{% url 'vendor_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-                    <!-- ✨ NEW: Review Management Link ✨ -->
                     <a href="{% url 'vendor_reviews' %}"><i class="bi bi-chat-left-text me-2"></i> Review Management</a>
                     <a href="{% url 'vendor_myshop' %}"><i class="bi bi-shop-window me-2"></i> My Shop</a>
                     <a href="{% url 'vendor_products' %}"><i class="bi bi-box-seam me-2"></i> My Products</a>
@@ -226,9 +269,10 @@
                                         <th class="ps-4">Order ID</th>
                                         <th>Date</th>
                                         <th>Customer</th>
-                                        <th>Product Info</th>
-                                        <th>Quantity</th>
+                                        <th style="min-width: 200px;">Items (Qty)</th>
+                                        <th>Total Price</th>
                                         <th>Status</th>
+                                        <th>Last Updated</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -238,7 +282,11 @@
                                             <a href="{% url 'order_process' order.id %}">#{{ order.id }}</a>
                                         </td>
 
-                                        <td class="text-muted small">{{ order.order_date|date:"M d, Y H:i" }}</td>
+                                        <td class="text-muted small">
+                                            {{ order.order_date|timezone:"Asia/Shanghai"|date:"M d, Y" }}<br>
+                                            {{ order.order_date|timezone:"Asia/Shanghai"|date:"H:i" }}
+                                        </td>
+
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded-circle bg-light text-dark d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 12px;">
@@ -247,11 +295,24 @@
                                                 <span>{{ order.user.username }}</span>
                                             </div>
                                         </td>
+
                                         <td>
-                                            <div class="fw-bold">{{ order.product.product_name }}</div>
-                                            <div class="text-muted small">ID: {{ order.product.id }}</div>
+                                            <ul class="list-unstyled mb-0 small">
+                                                {% for item in order.items.all %}
+                                                <li class="text-truncate mb-1" style="max-width: 250px;">
+                                                    <strong>{{ item.product.product_name }}</strong>
+                                                    <span class="text-muted ms-1">x {{ item.quantity }}</span>
+                                                </li>
+                                                {% empty %}
+                                                <li class="text-muted">No items</li>
+                                                {% endfor %}
+                                            </ul>
                                         </td>
-                                        <td>x {{ order.quantity }}</td>
+
+                                        <td class="fw-bold text-success">
+                                            ${{ order.calculated_total|floatformat:2 }}
+                                        </td>
+
                                         <td>
                                             {% if order.status == 'Pending' %}
                                                 <span class="badge bg-warning text-dark bg-opacity-25 px-3">Pending</span>
@@ -259,14 +320,25 @@
                                                 <span class="badge bg-primary bg-opacity-10 text-primary px-3">Shipped</span>
                                             {% elif order.status == 'Delivered' %}
                                                 <span class="badge bg-success bg-opacity-10 text-success px-3">Delivered</span>
+                                            {% elif order.status == 'Cancelled' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger px-3">Cancelled</span>
                                             {% else %}
                                                 <span class="badge bg-secondary px-3">{{ order.status }}</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td class="text-muted small">
+                                            {% if order.status_updated_at %}
+                                                {{ order.status_updated_at|timezone:"Asia/Shanghai"|date:"M d, Y" }}<br>
+                                                {{ order.status_updated_at|timezone:"Asia/Shanghai"|date:"H:i" }}
+                                            {% else %}
+                                                -
                                             {% endif %}
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
+                                        <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                                             No orders found yet.
                                         </td>
@@ -276,7 +348,6 @@
                             </table>
                         </div>
 
-                        <!-- ✨✨✨ Pagination Controls ✨✨✨ -->
                         {% if orders.has_other_pages %}
                         <div class="p-4 border-top">
                             <nav aria-label="Page navigation" class="mb-3">
@@ -317,7 +388,6 @@
                                 </ul>
                             </nav>
 
-                            <!-- ✨✨✨ Jump to Page Control ✨✨✨ -->
                             <div class="d-flex justify-content-center align-items-center gap-2">
                                 <div class="jump-wrapper">
                                     <input type="number" id="jumpPageInput" value="{{ orders.number }}" min="1" max="{{ orders.paginator.num_pages }}" class="jump-input">
@@ -334,7 +404,63 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // === ✨✨✨ 高级后台 Toast 渲染逻辑 ✨✨✨ ===
+        function showAdminToast(message, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const toastEl = document.createElement('div');
+            
+            // 如果是错误信息，增加 error 类名来改变边框颜色
+            toastEl.className = `admin-toast ${isError ? 'error' : ''}`;
+            toastEl.setAttribute('role', 'alert');
+            
+            toastEl.innerHTML = `
+                <div class="admin-toast-content">
+                    <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2 fs-6"></i>
+                    ${message}
+                </div>
+                <button type="button" class="admin-toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            container.appendChild(toastEl);
+            
+            // 延迟触发CSS滑动动画
+            setTimeout(() => toastEl.classList.add('show'), 50);
+            
+            // 3.5秒后自动滑出并移除
+            const timer = setTimeout(() => {
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 400); // 等待动画播完再删DOM
+            }, 3500);
+
+            // 绑定关闭按钮逻辑
+            toastEl.querySelector('.admin-toast-close').onclick = () => {
+                clearTimeout(timer);
+                toastEl.classList.remove('show');
+                setTimeout(() => toastEl.remove(), 400);
+            };
+        }
+
+        // 页面加载完成后，把 Django 的 messages 拦截下来并用 Toast 弹出来
+        document.addEventListener('DOMContentLoaded', () => {
+            const djangoMessages = [
+                {% if messages %}
+                    {% for message in messages %}
+                        { text: "{{ message|escapejs }}", isError: {% if message.tags == 'error' %}true{% else %}false{% endif %} },
+                    {% endfor %}
+                {% endif %}
+            ];
+
+            // 逐个弹出，稍微错开一点时间防止重叠
+            djangoMessages.forEach((msg, index) => {
+                setTimeout(() => {
+                    showAdminToast(msg.text, msg.isError);
+                }, 100 + (index * 300));
+            });
+        });
+
+        // 原有的分页跳转逻辑
         function jumpToPage() {
             const pageNum = document.getElementById('jumpPageInput').value;
             if (pageNum) {
@@ -345,6 +471,6 @@
             }
         }
     </script>
-{% include 'heartbeat.html' %}
+    {% include 'heartbeat.html' %}
 </body>
 </html>

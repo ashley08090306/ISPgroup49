@@ -409,6 +409,29 @@
             letter-spacing: 0.15em;
         }
 
+        /* === ✨ NEW: Recommendation Tabs Styles ✨ === */
+        .recommendation-section {
+            padding: 60px 40px 20px;
+        }
+        .tab-btn {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active { font-weight: 700; color: #000 !important; }
+        .tab-btn:not(.active) { font-weight: 400; color: #aaa !important; }
+        .tab-btn:hover:not(.active) { color: #555 !important; }
+        .tab-divider { color: #ddd; font-weight: 300; }
+        .tab-content-row { display: none; animation: fadeIn 0.6s ease forwards; }
+        .tab-content-row.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* === Product Grid === */
         .product-grid-section {
             padding: 30px 40px 60px;
@@ -876,6 +899,86 @@
                 </button>
             </div>
         {% endif %}
+
+        {% if not is_filtering and not search_query and not current_category %}
+        <section class="recommendation-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="tab-btn active text-dark" onclick="switchTab(this, 'trending')">TRENDING NOW</span>
+
+                    {% if user.is_authenticated and curated_products %}
+                    <span class="tab-divider mx-3">|</span>
+                    <span class="tab-btn text-muted" onclick="switchTab(this, 'curated')">CURATED FOR YOU</span>
+                    {% endif %}
+                </div>
+
+                <div id="tab-trending" class="row g-4 tab-content-row active">
+                    {% for product in trending_products %}
+                    <div class="col-6 col-md-3">
+                        <div class="product-card">
+                            <a href="{% url 'product_detail' product.id %}">
+                                <div class="product-img-container">
+                                    {% if product.images.first %}
+                                        <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
+                                    {% elif product.video %}
+                                        <video src="{{ product.video.url }}" class="product-video-preview" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>
+                                    {% else %}
+                                        <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">No Image</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            <div class="product-info">
+                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
+                                <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
+                                <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
+                                    {% if product.stock <= 0 %}
+                                        <span class="text-muted text-decoration-line-through">Sold Out</span>
+                                    {% else %}
+                                        USD {{ product.price }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if user.is_authenticated and curated_products %}
+                <div id="tab-curated" class="row g-4 tab-content-row" style="display: none;">
+                    {% for product in curated_products %}
+                    <div class="col-6 col-md-3">
+                        <div class="product-card">
+                            <a href="{% url 'product_detail' product.id %}">
+                                <div class="product-img-container">
+                                    {% if product.images.first %}
+                                        <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
+                                    {% elif product.video %}
+                                        <video src="{{ product.video.url }}" class="product-video-preview" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>
+                                    {% else %}
+                                        <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">No Image</div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            <div class="product-info">
+                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
+                                <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
+                                <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
+                                    {% if product.stock <= 0 %}
+                                        <span class="text-muted text-decoration-line-through">Sold Out</span>
+                                    {% else %}
+                                        USD {{ product.price }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="container"><hr class="my-5 text-muted" style="opacity: 0.2;"></div>
+        </section>
+        {% endif %}
     {% endif %}
 
     {% if search_query or current_category %}
@@ -1042,11 +1145,11 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-center text-muted mb-4" style="font-size: 0.95rem;">Our Client Advisors are available to answer your questions and assist you with your purchases or bespoke inquiries.</p>
-                    
+
                     <h6>Boutique & Headquarters</h6>
                     <p><strong>RAFAYEL & GRACE</strong><br>
                     Macau, China</p>
-                    
+
                     <h6>By Phone</h6>
                     <p>Toll-free number: <strong>+853 6266-3467</strong><br>
                     From Monday to Saturday from 10am to 10pm UTC+8 and Sunday from 11am to 7pm UTC+8.</p>
@@ -1054,7 +1157,7 @@
                     <h6>By Email</h6>
                     <p>Please send your general questions or concerns to:<br>
                     <a href="mailto:contact@myshop.com" class="text-dark fw-bold text-decoration-underline">contact@RAFAYELGRACE.com</a></p>
-                    
+
                     <p class="small text-muted mt-5 pt-3 border-top text-center">Typical response time is within 24 business hours.</p>
                 </div>
             </div>
@@ -1070,14 +1173,14 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted fw-bold">Last Updated: February 2026</p>
-                    
+
                     <p>Welcome to the RAFAYEL & GRACE Platform provided to you by RAFAYEL & GRACE. Please read carefully and fully the following content, particularly the terms exempting or limiting the liability of RAFAYEL & GRACE, the terms limiting the rights of Users, and the terms stipulating the governing law of these Terms and the jurisdiction in which disputes shall be resolved.</p>
                     <p>If you are under the age of 18 or do not meet the age requirements for using the RAFAYEL & GRACE Platform in the place where you live, please do not use the Platform. You are not authorized to use the Platform unless you have fully read and accepted all the clauses of these Terms.</p>
 
                     <h6>1. Definitions and Scope of these Terms</h6>
                     <p><strong>"RAFAYEL & GRACE", "we", and "us"</strong> means RAFAYEL & GRACE and its affiliates. In certain instances, you may agree to supplemental terms with a specific entity as the contracting party to access and use certain aspects of the Platform.</p>
                     <p><strong>"Platform Services"</strong> means various functions or services provided by RAFAYEL & GRACE through the Platform, including but not limited to content browsing, content distribution, goods and services transactions, and other functions or services such as collection, comments, sharing, forwarding, search, and platform activities.</p>
-                    
+
                     <h6>2. Account Management</h6>
                     <p>The Account you obtain after registration and the password you set are your credentials for logging in and using the Platform as a User. You should use them carefully and keep them properly. You shall be responsible for all activities and conducts undertaken by the Account. You shall be responsible for any hacking of the Account, loss of password, and illegal use of the Account, which are caused by your improper safekeeping of your Account.</p>
                     <p>You shall not register an Account maliciously, including but not limited to via frequent registration, batch registration, registration using another person’s identity or other Account registration activities that are not conducted for the purpose of normal usage of the Platform.</p>
@@ -1111,12 +1214,12 @@
                 <div class="modal-body">
                     <p class="text-muted fw-bold">Last Updated: February 2026</p>
                     <p>Confidentiality and security of your personal data are important to us. We would like to offer you personalized services while respecting your privacy and choices. This Privacy Statement is provided by RAFAYEL & GRACE, a luxury retail and wholesale brand. The purpose of this Statement is to inform you in a transparent and simple manner about the processing of the personal data that you provide or that we collect through the different touchpoints you use to interact with us.</p>
-                    
+
                     <h6>1. What Data May We Collect Or Receive About You?</h6>
                     <p>"Personal data" means any information that could reasonably identify you either directly (e.g. your name) or indirectly (e.g. through a unique client ID number). Depending on your interactions with us, personal data we receive may include information related to:</p>
                     <ul>
                         <li>Your identity and your contact details (e.g., name, address, email address, date of birth);</li>
-                        <li>Your profile with information you may provide when creating your account (such as with your interests and your preferences) or to manage your wish lists;</li>
+                        <li>Your profile with information you may provide when creating your account (such as with your interests and your preferences);</li>
                         <li>Your purchases (in store or online, including your orders, their tracking information, your purchase invoices, the amount and type of your purchase) and any returns or exchanges;</li>
                         <li>Your financial information to process your orders;</li>
                         <li>Your publications and mentions of our products on social networks.</li>
@@ -1203,6 +1306,33 @@
             if (overlay.classList.contains('active')) {
                 const input = overlay.querySelector('.search-input');
                 setTimeout(() => input.focus(), 100);
+            }
+        }
+
+        // === ✨ NEW: Tab Switch Logic for Recommendations ✨ ===
+        function switchTab(element, tabId) {
+            // Remove active state from all buttons
+            const tabsContainer = element.parentElement;
+            tabsContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-dark');
+                if(!btn.classList.contains('text-muted')) btn.classList.add('text-muted');
+            });
+
+            // Add active state to clicked button
+            element.classList.add('active', 'text-dark');
+            element.classList.remove('text-muted');
+
+            // Hide all content rows
+            document.querySelectorAll('.tab-content-row').forEach(row => {
+                row.classList.remove('active');
+                row.style.display = 'none';
+            });
+
+            // Show target content row
+            const targetRow = document.getElementById('tab-' + tabId);
+            if (targetRow) {
+                targetRow.style.display = ''; // Restore to CSS flex
+                targetRow.classList.add('active');
             }
         }
 

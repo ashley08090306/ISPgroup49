@@ -17,6 +17,7 @@ from django.contrib import messages
 from .utils import sensitive_filter
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models.functions import Coalesce # ✨ NEW: 用于推荐系统处理空销量
 
 # ==================== 首页与搜索 (多语言支持 + 停用词优化版) ====================
 
@@ -185,6 +186,54 @@ def home(request):
             {'image': 'https://www.chanel.com/puls-img/c_limit,w_3200/q_auto:good,dpr_auto,f_auto/1764081681922-one-hpjoa-d-majorpush-5760x1800px_1800x5760.jpg', 'subtitle': 'Radiance', 'title': 'GOLDEN<br>DETAILS', 'filter': 'brightness(0.8)'}
         ]
 
+    # ==================== ✨ NEW: 智能推荐引擎 (Option B 核心算法) ✨ ====================
+
+    # 策略 1: 全局热销榜 (Trending Now)
+    # 逻辑: 统计所有订单中每个商品的售出数量，取前 4 名。如果数量一样或没卖过，按上架最新排序。
+    trending_products = Product.objects.filter(available=True, stock__gt=0).annotate(
+        total_sold=Coalesce(Sum('orderitem__quantity'), 0)
+    ).order_by('-total_sold', '-id')[:4]
+
+    curated_products = []
+    if request.user.is_authenticated:
+        # 策略 2: 个性化猜你喜欢 (Curated For You)
+
+        # a. 挖掘用户偏好：获取该用户过去买过的所有商品分类
+        bought_categories = OrderItem.objects.filter(
+            order__user=request.user
+        ).values_list('product__category', flat=True).distinct()
+
+        # b. 过滤已购商品：获取用户已经买过的商品ID，为了防止推荐他已经买过的东西
+        bought_product_ids = OrderItem.objects.filter(
+            order__user=request.user
+        ).values_list('product_id', flat=True).distinct()
+
+        # ✨ 核心修复：把兜底逻辑缩进到 if 里面！只有买过东西的人，才配拥有兜底推荐。
+        if bought_categories:
+            # c. 精准推荐：在用户买过的分类里，挑出他没买过的、且当前全站最畅销的商品
+            curated_qs = Product.objects.filter(
+                available=True,
+                stock__gt=0,
+                category__in=bought_categories
+            ).exclude(
+                id__in=bought_product_ids
+            ).annotate(
+                total_sold=Coalesce(Sum('orderitem__quantity'), 0)
+            ).order_by('-total_sold', '-id')[:4]
+            curated_products = list(curated_qs)
+
+            # d. 智能兜底 (Fallback)：如果算出来的商品不足 4 个，用其他类目的热销款补齐，确保页面美观
+            if len(curated_products) < 4:
+                exclude_ids = list(bought_product_ids) + [p.id for p in curated_products]
+                fillers = Product.objects.filter(available=True, stock__gt=0).exclude(
+                    id__in=exclude_ids
+                ).annotate(
+                    total_sold=Coalesce(Sum('orderitem__quantity'), 0)
+                ).order_by('-total_sold', '-id')[:4 - len(curated_products)]
+                curated_products.extend(list(fillers))
+
+    # =================================================================================
+
     context = {
         'products': products,
         'categories': categories,
@@ -200,6 +249,9 @@ def home(request):
         'current_max_price': max_price_input if max_price_input else global_max_price,
         'current_sort': sort_by,
         'products_json': json.dumps(products_json_data),
+        # ✨ 将推荐数据传给前端
+        'trending_products': trending_products,
+        'curated_products': curated_products,
     }
     return render(request, 'home.html', context)
 
@@ -284,13 +336,13 @@ def user_profile(request):
 
     elif active_tab == 'reviews':
         reviews = Review.objects.filter(user=user).select_related('product').order_by('-created_at')
-        
+
         # ✨ 新增：提取可能被敏感词拦截的追评草稿
         for r in reviews:
             draft = request.session.pop(f'draft_append_{r.id}', None)
             if draft is not None:
                 r.draft_append = draft
-                
+
         context['reviews'] = reviews
 
     return render(request, 'user_profile.html', context)
@@ -391,14 +443,14 @@ def append_review(request, review_id):
             return redirect(f"{reverse('user_profile')}?tab=reviews")
 
         append_text = request.POST.get('appended_comment', '').strip()
-        
+
         if not append_text:
             messages.error(request, "Update content cannot be empty.")
             return redirect(f"{reverse('user_profile')}?tab=reviews")
 
         # ✨ 敏感词拦截核心逻辑
         is_sensitive, filtered_text = sensitive_filter.filter(append_text)
-        
+
         if is_sensitive:
             # 命中敏感词：将原文字存入 session，防止清空
             request.session[f'draft_append_{review.id}'] = append_text
@@ -645,7 +697,7 @@ def toggle_review_like(request, review_id):
     return JsonResponse({'status': 'error', 'message': 'Invalid method.'}, status=400)
 
 
-# ==================== 购物车系统 (Persistent Updated) ====================
+# ==================== 购物车系统 (防超卖加固版) ====================
 
 def add_to_cart(request):
     if request.method == 'POST':
@@ -655,13 +707,27 @@ def add_to_cart(request):
         product_id = request.POST.get('product_id')
         if not product_id: return JsonResponse({'status': 'error', 'message': 'Invalid product'}, status=400)
 
+        # ✨ 第一道防线：获取商品并检查基础库存 ✨
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Product not found.'}, status=404)
+
+        if product.stock <= 0:
+            return JsonResponse({'status': 'error', 'message': 'This piece is currently sold out.'}, status=400)
+
         # ✨ PERSISTENT LOGIC ✨
         if request.user.is_authenticated:
             # Use Database Cart
             try:
-                product = Product.objects.get(id=product_id)
                 cart, _ = Cart.objects.get_or_create(user=request.user)
                 cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+                
+                # ✨ 第一道防线：拦截超出库存的加购 ✨
+                current_qty = cart_item.quantity if not created else 0
+                if current_qty + 1 > product.stock:
+                    return JsonResponse({'status': 'error', 'message': f'We only have {product.stock} of this piece available.'}, status=400)
+
                 if not created:
                     cart_item.quantity += 1
                     cart_item.save()
@@ -674,6 +740,12 @@ def add_to_cart(request):
         else:
             # Use Session Cart (Anonymous)
             cart = request.session.get('cart', {})
+            current_qty = cart.get(str(product_id), 0)
+            
+            # ✨ 第一道防线：拦截超出库存的加购 (匿名用户) ✨
+            if current_qty + 1 > product.stock:
+                return JsonResponse({'status': 'error', 'message': f'We only have {product.stock} of this piece available.'}, status=400)
+
             if product_id in cart: cart[product_id] += 1
             else: cart[product_id] = 1
             request.session['cart'] = cart
@@ -728,6 +800,9 @@ def update_cart(request):
                 item = CartItem.objects.get(cart=cart, product_id=product_id)
 
                 if action == 'increase':
+                    # ✨ 第二道防线：在购物车页面点击 '+' 号时的库存拦截 ✨
+                    if item.quantity + 1 > item.product.stock:
+                        return JsonResponse({'status': 'error', 'message': f'We only have {item.product.stock} of this piece available.'}, status=400)
                     item.quantity += 1
                     item.save()
                 elif action == 'decrease':
@@ -744,7 +819,12 @@ def update_cart(request):
             # Session Cart Update
             cart = request.session.get('cart', {})
             if product_id in cart:
-                if action == 'increase': cart[product_id] += 1
+                if action == 'increase': 
+                    # ✨ 第二道防线：在购物车页面点击 '+' 号时的库存拦截 (匿名用户) ✨
+                    product = Product.objects.get(id=product_id)
+                    if cart[product_id] + 1 > product.stock:
+                        return JsonResponse({'status': 'error', 'message': f'We only have {product.stock} of this piece available.'}, status=400)
+                    cart[product_id] += 1
                 elif action == 'decrease':
                     cart[product_id] -= 1
                     if cart[product_id] <= 0: del cart[product_id]
@@ -994,7 +1074,7 @@ def heartbeat(request):
     if request.user.is_authenticated: request.session.modified = True
     return HttpResponse("alive")
 
-# ✨✨✨ 核心修改：Checkout 创建逻辑 (一单多品) ✨✨✨
+# ✨✨✨ 核心修改：Checkout 创建逻辑 (防超卖加固版) ✨✨✨
 @login_required
 def checkout(request):
     cart_items = []
@@ -1030,44 +1110,63 @@ def checkout(request):
 
     if request.method == 'POST':
         if 'payment_method' in request.POST:
-            # 1. 构造收货信息
-            shipping_info = ""
-            address_source = request.POST.get('address_source', 'new')
-            if address_source == 'existing':
-                addr_id = request.POST.get('selected_address_id')
-                if addr_id:
-                    addr = get_object_or_404(ShippingAddress, id=addr_id, user=request.user)
-                    shipping_info = f"{addr.detail_address}, {addr.street}, {addr.city}, {addr.country}"
-            else:
-                shipping_info = f"{request.POST.get('address_detail')}, {request.POST.get('address_street')}, {request.POST.get('address_city')}"
+            try:
+                # ✨ 第三道防线 (最硬核)：终极防超卖与悲观锁 (Pessimistic Locking) ✨
+                # 开启数据库事务机制 (Transaction)，以下所有数据库操作要么全部成功，要么全部回滚
+                with transaction.atomic():
+                    for item in cart_items:
+                        # select_for_update() 是企业级并发防超卖的核心写法，会锁住当前商品的数据库行
+                        db_product = Product.objects.select_for_update().get(id=item.id)
+                        if item.quantity > db_product.stock:
+                            # 如果发现数量不够，拦截结账并退回购物车
+                            messages.error(request, f"Sorry, '{db_product.product_name}' only has {db_product.stock} left. Please adjust your bag.")
+                            return redirect('cart_view')
 
-            # 2. 创建主订单 (Main Order)
-            order = Order.objects.create(
-                user=request.user,
-                status="Pending",
-                shipping_info=shipping_info,
-                status_updated_at=timezone.now()
-            )
+                    # 1. 构造收货信息
+                    shipping_info = ""
+                    address_source = request.POST.get('address_source', 'new')
+                    if address_source == 'existing':
+                        addr_id = request.POST.get('selected_address_id')
+                        if addr_id:
+                            addr = get_object_or_404(ShippingAddress, id=addr_id, user=request.user)
+                            shipping_info = f"{addr.detail_address}, {addr.street}, {addr.city}, {addr.country}"
+                    else:
+                        shipping_info = f"{request.POST.get('address_detail')}, {request.POST.get('address_street')}, {request.POST.get('address_city')}"
 
-            # 3. 创建子项 (OrderItems)
-            for item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item,
-                    quantity=item.quantity,
-                    price=item.price
-                )
-                # 扣减库存
-                item.stock -= item.quantity
-                item.save()
+                    # 2. 创建主订单 (Main Order) - ✨ 注意：它现在被包在事务锁里了
+                    order = Order.objects.create(
+                        user=request.user,
+                        status="Pending",
+                        shipping_info=shipping_info,
+                        status_updated_at=timezone.now()
+                    )
 
-            # 4. 清空购物车
-            if request.user.is_authenticated:
-                Cart.objects.filter(user=request.user).delete()
-            else:
-                request.session['cart'] = {}
+                    # 3. 创建子项 (OrderItems) 并安全扣减库存
+                    for item in cart_items:
+                        OrderItem.objects.create(
+                            order=order,
+                            product=item,
+                            quantity=item.quantity,
+                            price=item.price
+                        )
+                        # 因为上面已经做了 select_for_update，这里的扣减是绝对安全的，绝不会出现负数
+                        db_product = Product.objects.get(id=item.id)
+                        db_product.stock -= item.quantity
+                        db_product.save()
 
-            return redirect('order_confirmation', order_id=order.id)
+                    # 4. 清空购物车
+                    if request.user.is_authenticated:
+                        Cart.objects.filter(user=request.user).delete()
+                    else:
+                        request.session['cart'] = {}
+
+                # ✨ 只有当 with 块里的所有操作都顺利完成了，才会走到这一步进行跳转
+                return redirect('order_confirmation', order_id=order.id)
+            
+            except Exception as e:
+                # ✨ 捕获可能出现的任何数据库异常，退回购物车并友好提示
+                messages.error(request, f"Checkout failed: {str(e)}")
+                return redirect('cart_view')
 
     context = {
         'cart_items': cart_items,
@@ -1090,7 +1189,7 @@ def order_confirmation(request, order_id):
     }
     return render(request, 'order_confirmation.html', context)
 
-# ✨✨✨ 核心修改：商家订单处理 (状态机+时间更新) ✨✨✨
+# ✨✨✨ 核心修改：商家订单处理 (状态机+自动回仓) ✨✨✨
 @login_required
 def order_process(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -1115,18 +1214,26 @@ def order_process(request, order_id):
         # Cancelled 和 Processed 是终态，不允许任何修改
 
         if allowed:
-            order.status = new_status
-            order.status_updated_at = timezone.now() # 更新通用时间
+            # ✨ 添加事务锁，防止在退库存的过程中出现并发问题 ✨
+            with transaction.atomic():
+                order.status = new_status
+                order.status_updated_at = timezone.now() # 更新通用时间
 
-            # ✨✨✨ 核心修改：根据 B4 Requirement 记录各阶段时间 ✨✨✨
-            if new_status == 'Shipped':
-                order.shipped_at = timezone.now()
-            elif new_status == 'Processed':
-                order.processed_at = timezone.now()
-            elif new_status == 'Cancelled':
-                order.cancelled_at = timezone.now()
+                # ✨✨✨ 核心修改：记录阶段时间并执行自动回仓 ✨✨✨
+                if new_status == 'Shipped':
+                    order.shipped_at = timezone.now()
+                elif new_status == 'Processed':
+                    order.processed_at = timezone.now()
+                elif new_status == 'Cancelled':
+                    order.cancelled_at = timezone.now()
+                    
+                    # ✨ 核心机制：商家取消订单，退回库存 ✨
+                    for item in order.items.all():
+                        db_product = Product.objects.select_for_update().get(id=item.product.id)
+                        db_product.stock += item.quantity
+                        db_product.save()
 
-            order.save()
+                order.save()
             messages.success(request, f"Order #{order.id} status updated to {new_status}.")
         else:
             # 增加更具体的错误提示，帮助调试
@@ -1144,16 +1251,25 @@ def order_process(request, order_id):
 
     return render(request, 'order_process.html', {'order': order})
 
-# ✨✨✨ 核心修改：取消订单 (时间更新) ✨✨✨
+# ✨✨✨ 核心修改：买家取消订单 (状态机+自动回仓) ✨✨✨
 @login_required
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
 
     if order.status == 'Pending':
-        order.status = 'Cancelled'
-        order.status_updated_at = timezone.now() # 更新通用时间
-        order.cancelled_at = timezone.now() # ✨ 核心修改：记录取消时间
-        order.save()
+        # ✨ 添加事务锁，防止在退库存的过程中出现并发问题 ✨
+        with transaction.atomic():
+            order.status = 'Cancelled'
+            order.status_updated_at = timezone.now() # 更新通用时间
+            order.cancelled_at = timezone.now() 
+            
+            # ✨ 核心机制：买家取消订单，自动退回库存 ✨
+            for item in order.items.all():
+                db_product = Product.objects.select_for_update().get(id=item.product.id)
+                db_product.stock += item.quantity
+                db_product.save()
+                
+            order.save()
         messages.success(request, f"Order #{order.id} has been cancelled successfully.")
     else:
         messages.error(request, "This order cannot be cancelled at this stage.")

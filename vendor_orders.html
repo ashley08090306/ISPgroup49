@@ -393,7 +393,7 @@
                                     <input type="number" id="jumpPageInput" value="{{ orders.number }}" min="1" max="{{ orders.paginator.num_pages }}" class="jump-input">
                                     <span class="jump-total">/ {{ orders.paginator.num_pages }}</span>
                                 </div>
-                                <button onclick="jumpToPage()" class="btn-jump">跳转</button>
+                                <button onclick="jumpToPage()" class="btn-jump">Go</button>
                             </div>
                         </div>
                         {% endif %}
@@ -410,11 +410,11 @@
         function showAdminToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
             const toastEl = document.createElement('div');
-            
+
             // 如果是错误信息，增加 error 类名来改变边框颜色
             toastEl.className = `admin-toast ${isError ? 'error' : ''}`;
             toastEl.setAttribute('role', 'alert');
-            
+
             toastEl.innerHTML = `
                 <div class="admin-toast-content">
                     <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2 fs-6"></i>
@@ -422,12 +422,12 @@
                 </div>
                 <button type="button" class="admin-toast-close" onclick="this.parentElement.remove()">&times;</button>
             `;
-            
+
             container.appendChild(toastEl);
-            
+
             // 延迟触发CSS滑动动画
             setTimeout(() => toastEl.classList.add('show'), 50);
-            
+
             // 3.5秒后自动滑出并移除
             const timer = setTimeout(() => {
                 toastEl.classList.remove('show');

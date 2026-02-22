@@ -155,7 +155,7 @@
         }
         .btn-outline-action:hover { background: #000; color: #fff; }
 
-        /* ✨ NEW: Elegant Text Link Buttons for Reviews ✨ */
+        /* ✨ Elegant Text Link Buttons ✨ */
         .text-action-link {
             background: none;
             border: none;
@@ -247,7 +247,7 @@
         .qty-btn { background: none; border: none; padding: 2px 8px; cursor: pointer; }
         .qty-display { padding: 0 8px; font-size: 0.85rem; }
 
-        /* === LUXURY TOAST NOTIFICATION (NEW) === */
+        /* === 极简黑白 Toast === */
         .toast-container-custom {
             position: fixed;
             top: 100px;
@@ -544,9 +544,19 @@
                         <a href="?tab=orders" class="text-decoration-none text-muted small text-uppercase"><i class="bi bi-arrow-left"></i> Back to Orders</a>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
                         <h2 class="section-title mb-0 border-0">Order #{{ order_detail.id }}</h2>
-                        <span class="badge bg-dark text-uppercase p-2" style="font-size: 0.8rem;">{{ order_detail.status }}</span>
+                        
+                        <div class="text-end">
+                            <span class="badge bg-dark text-uppercase p-2" style="font-size: 0.8rem; border-radius: 0; letter-spacing: 0.05em;">{{ order_detail.status }}</span>
+                            {% if order_detail.status == 'Pending' %}
+                                <div class="mt-2">
+                                    <button class="text-action-link" onclick="confirmCancel({{ order_detail.id }})" title="Cancel this order">
+                                        <i class="bi bi-x-circle"></i> Cancel Order
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="row">
@@ -590,27 +600,27 @@
                                 {% timezone "Asia/Shanghai" %}
                                 <p class="small mb-2 d-flex justify-content-between">
                                     <strong>Placed:</strong>
-                                    <span>{{ order_detail.order_date|date:"M d, H:i" }} (CST)</span>
+                                    <span>{{ order_detail.order_date|date:"Y-m-d H:i" }}</span>
                                 </p>
 
                                 {% if order_detail.shipped_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-success">
                                     <strong>Shipped:</strong>
-                                    <span>{{ order_detail.shipped_at|date:"M d, H:i" }} (CST)</span>
+                                    <span>{{ order_detail.shipped_at|date:"Y-m-d H:i" }}</span>
                                 </p>
                                 {% endif %}
 
                                 {% if order_detail.processed_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-success">
                                     <strong>Processed:</strong>
-                                    <span>{{ order_detail.processed_at|date:"M d, H:i" }} (CST)</span>
+                                    <span>{{ order_detail.processed_at|date:"Y-m-d H:i" }}</span>
                                 </p>
                                 {% endif %}
 
                                 {% if order_detail.cancelled_at %}
                                 <p class="small mb-2 d-flex justify-content-between text-danger">
                                     <strong>Cancelled:</strong>
-                                    <span>{{ order_detail.cancelled_at|date:"M d, H:i" }} (CST)</span>
+                                    <span>{{ order_detail.cancelled_at|date:"Y-m-d H:i" }}</span>
                                 </p>
                                 {% endif %}
                                 {% endtimezone %}
@@ -718,7 +728,7 @@
                                 </td>
                                 <td class="text-muted small">
                                     {% if order.status_updated_at %}
-                                        {{ order.status_updated_at|date:"M d, H:i" }}
+                                        {{ order.status_updated_at|date:"Y-m-d H:i" }}
                                     {% else %}
                                         -
                                     {% endif %}
@@ -764,43 +774,43 @@
                     </div>
                     {% endif %}
 
-                    <div class="modal fade" id="cancelOrderModal" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content rounded-0 border-0 shadow">
-                                <div class="modal-header border-0 pb-0">
-                                    <h5 class="modal-title font-serif text-uppercase">Cancel Order</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body text-center py-4">
-                                    <p class="mb-0 text-muted">Are you sure you want to cancel this order?</p>
-                                    <p class="small text-danger mt-2">This action cannot be undone.</p>
-                                </div>
-                                <div class="modal-footer border-0 justify-content-center pb-4">
-                                    <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">No</button>
-                                    <a href="#" id="confirmCancelBtn" class="btn btn-danger px-4">Yes, Cancel</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="statusInfoModal" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content rounded-0 border-0 shadow">
-                                <div class="modal-header border-0 pb-0">
-                                    <h5 class="modal-title font-serif text-uppercase">Order Status</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body text-center py-4">
-                                    <p class="mb-0 text-muted" id="statusInfoText"></p>
-                                </div>
-                                <div class="modal-footer border-0 justify-content-center pb-4">
-                                    <button type="button" class="btn btn-dark px-5" data-bs-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 {% endif %}
+
+                <div class="modal fade" id="cancelOrderModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-0 border-0 shadow">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title font-serif text-uppercase">Cancel Order</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center py-4">
+                                <p class="mb-0 text-muted">Are you sure you want to cancel this order?</p>
+                                <p class="small text-danger mt-2">This action cannot be undone.</p>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center pb-4">
+                                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal">No</button>
+                                <a href="#" id="confirmCancelBtn" class="btn btn-danger px-4">Yes, Cancel</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="statusInfoModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-0 border-0 shadow">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title font-serif text-uppercase">Order Status</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center py-4">
+                                <p class="mb-0 text-muted" id="statusInfoText"></p>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center pb-4">
+                                <button type="button" class="btn btn-dark px-5" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             {% elif active_tab == 'bag' %}
                 <h2 class="section-title">My Shopping Bag</h2>
@@ -948,9 +958,6 @@
         </div>
     </footer>
 
-    <div id="toastContainer" class="toast-container-custom">
-        </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // === ✨✨✨ NEW: 全局自定义精美弹窗 (Toast) 替代 alert() ✨✨✨ ===
@@ -963,7 +970,7 @@
             
             toastEl.innerHTML = `
                 <div class="lux-toast-content">
-                    <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2"></i>
+                    <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-white'} me-2"></i>
                     ${message}
                 </div>
                 <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>

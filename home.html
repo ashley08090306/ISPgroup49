@@ -409,7 +409,7 @@
             letter-spacing: 0.15em;
         }
 
-        /* === ✨ NEW: Recommendation Tabs Styles ✨ === */
+        /* === Recommendation Tabs Styles === */
         .recommendation-section {
             padding: 60px 40px 20px;
         }
@@ -516,7 +516,7 @@
             color: #fff;
         }
 
-        /* === NEW: FILTER UI === */
+        /* === FILTER UI === */
         .filter-bar-container {
             display: flex;
             justify-content: space-between;
@@ -714,6 +714,29 @@
         .luxury-modal .modal-body li {
             margin-bottom: 8px;
         }
+
+        /* ✨✨✨ Pagination & Jump UI (From User Profile) ✨✨✨ */
+        .custom-page-link {
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px !important; border: 1px solid #dee2e6;
+            color: #333; background-color: #fff; font-weight: 600; text-decoration: none; margin: 0 3px;
+        }
+        .custom-page-link:hover { background-color: #f0f0f0; color: #000; }
+        .page-item.active .custom-page-link { background-color: #000; border-color: #000; color: #fff; }
+        .page-item.disabled .custom-page-link { color: #ccc; pointer-events: none; border-color: #eee; }
+
+        .jump-wrapper {
+            background-color: #fff; border: 1px solid #dee2e6; padding: 6px 15px; border-radius: 4px;
+            display: flex; align-items: center; font-size: 0.9rem;
+        }
+        .jump-input {
+            border: none; border-bottom: 2px solid #eee; width: 40px; text-align: center; font-weight: bold; outline: none; margin-right: 8px;
+        }
+        .jump-input:focus { border-bottom-color: #000; }
+        .btn-jump {
+            background-color: #000; color: #fff; border: none; padding: 5px 15px; border-radius: 4px; font-size: 0.8rem; margin-left: 10px; transition: opacity 0.2s;
+        }
+        .btn-jump:hover { opacity: 0.8; }
 
         /* === Responsive Adjustments === */
         @media (max-width: 768px) {
@@ -998,7 +1021,7 @@
                 <button class="btn-filter" onclick="toggleFilterDrawer()">
                     <i class="bi bi-sliders2"></i> FILTERS
                 </button>
-                <span class="product-count">{{ products.count }} PRODUCTS</span>
+                <span class="product-count">{{ products.paginator.count }} PRODUCTS</span>
             </div>
 
             <div class="row g-4">
@@ -1048,6 +1071,50 @@
                 </div>
                 {% endfor %}
             </div>
+
+            {% if products.has_other_pages %}
+            <div class="d-flex flex-column align-items-center mt-5 mb-5">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center m-0">
+                        {% if products.has_previous %}
+                            <li class="page-item">
+                                <a class="custom-page-link" href="?page={{ products.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% for brand in selected_brands %}&brand={{ brand }}{% endfor %}">&laquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="custom-page-link">&laquo;</span>
+                            </li>
+                        {% endif %}
+
+                        {% for i in custom_page_range %}
+                            {% if i == products.paginator.ELLIPSIS %}
+                                <li class="page-item disabled"><span class="custom-page-link bg-transparent border-0 text-muted">...</span></li>
+                            {% else %}
+                                <li class="page-item {% if i == products.number %}active{% endif %}">
+                                    <a class="custom-page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% for brand in selected_brands %}&brand={{ brand }}{% endfor %}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if products.has_next %}
+                            <li class="page-item">
+                                <a class="custom-page-link" href="?page={{ products.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}{% for brand in selected_brands %}&brand={{ brand }}{% endfor %}">&raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="custom-page-link">&raquo;</span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="jump-wrapper mt-3">
+                    <input type="number" id="jumpPageInput" value="{{ products.number }}" min="1" max="{{ products.paginator.num_pages }}" class="jump-input">
+                    <span class="text-muted small">/ {{ products.paginator.num_pages }}</span>
+                    <button onclick="jumpToPage()" class="btn-jump">Go</button>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </section>
 
@@ -1484,13 +1551,14 @@
         }
 
         function setLanguage(lang) {
+            document.cookie = "googtrans=/en/" + lang + "; path=/; domain=" + window.location.hostname;
             document.cookie = "googtrans=/en/" + lang + "; path=/";
             location.reload();
         }
 
-        const script = document.createElement('script');
-        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-        document.body.appendChild(script);
+        const s = document.createElement('script');
+        s.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        document.body.appendChild(s);
 
         function setFontSize(size) {
             document.documentElement.style.fontSize = size;
@@ -1570,6 +1638,16 @@
                 statusSpan.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2"></i> Error: Try Again`;
                 statusSpan.className = "status-error active"; // Orange style
             };
+        }
+
+        // === ✨✨✨ NEW: Page Jump Logic for Home Page ✨✨✨ ===
+        function jumpToPage() {
+            const pageNum = document.getElementById('jumpPageInput').value;
+            if (pageNum) {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('page', pageNum);
+                window.location.search = urlParams.toString();
+            }
         }
     </script>
 

@@ -267,7 +267,7 @@
                             {% endif %}
 
                             <div class="collapse mt-3 {% if review.reply_error %}show{% endif %}" id="replyForm{{review.id}}">
-                                
+
                                 {% if review.reply_error %}
                                 <div class="alert alert-danger d-flex align-items-center mb-3 shadow-sm" role="alert" style="border-left: 5px solid red;">
                                     <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
@@ -337,7 +337,7 @@
                         <input type="number" id="jumpPageInput" class="jump-input"
                                value="{{ reviews.number }}" min="1" max="{{ reviews.paginator.num_pages }}">
                         <span class="text-muted small">/ {{ reviews.paginator.num_pages }}</span>
-                        <button onclick="jumpToPage()" class="jump-btn">跳转</button>
+                        <button onclick="jumpToPage()" class="jump-btn">Go</button>
                     </div>
 
                 </div>
@@ -365,7 +365,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 找到所有带有 auto-close-alert 类的提示框
             const alerts = document.querySelectorAll('.auto-close-alert');
-            
+
             alerts.forEach(function(alert) {
                 // 设置 3.5 秒 (3500毫秒) 后自动触发 Bootstrap 的关闭动画
                 setTimeout(function() {
@@ -374,7 +374,7 @@
                         let bsAlert = new bootstrap.Alert(alert);
                         bsAlert.close();
                     }
-                }, 3500); 
+                }, 3500);
             });
         });
     </script>

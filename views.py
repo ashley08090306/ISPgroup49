@@ -232,10 +232,22 @@ def home(request):
                 ).order_by('-total_sold', '-id')[:4 - len(curated_products)]
                 curated_products.extend(list(fillers))
 
+    # ==================== ✨ NEW: 满足 A5 需求的分页逻辑 ✨ ====================
+    # 设定每页显示 8 个商品 (你可以根据需要改成 12 或 16)
+    paginator = Paginator(products, 8)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # 生成智能的缩略页码 (比如 1 2 ... 5 6 7 ... 10)
+    if hasattr(paginator, 'get_elided_page_range'):
+        custom_page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
+    else:
+        custom_page_range = paginator.page_range
     # =================================================================================
 
     context = {
-        'products': products,
+        'products': page_obj, # ✨ 这里把原本的 products 换成了 page_obj
+        'custom_page_range': custom_page_range, # ✨ 传给前端的页码范围
         'categories': categories,
         'search_query': search_query,
         'current_category': current_category,
@@ -722,7 +734,7 @@ def add_to_cart(request):
             try:
                 cart, _ = Cart.objects.get_or_create(user=request.user)
                 cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-                
+
                 # ✨ 第一道防线：拦截超出库存的加购 ✨
                 current_qty = cart_item.quantity if not created else 0
                 if current_qty + 1 > product.stock:
@@ -741,7 +753,7 @@ def add_to_cart(request):
             # Use Session Cart (Anonymous)
             cart = request.session.get('cart', {})
             current_qty = cart.get(str(product_id), 0)
-            
+
             # ✨ 第一道防线：拦截超出库存的加购 (匿名用户) ✨
             if current_qty + 1 > product.stock:
                 return JsonResponse({'status': 'error', 'message': f'We only have {product.stock} of this piece available.'}, status=400)
@@ -819,7 +831,7 @@ def update_cart(request):
             # Session Cart Update
             cart = request.session.get('cart', {})
             if product_id in cart:
-                if action == 'increase': 
+                if action == 'increase':
                     # ✨ 第二道防线：在购物车页面点击 '+' 号时的库存拦截 (匿名用户) ✨
                     product = Product.objects.get(id=product_id)
                     if cart[product_id] + 1 > product.stock:
@@ -931,8 +943,10 @@ def logout_view(request):
 @login_required
 def vendor_dashboard(request):
     if getattr(request.user, 'role', '') != 'vendor': raise PermissionDenied
-    # ✨ 核心修改：跨表计算总销售额 (OrderItem price * quantity)
-    total_sales = Order.objects.aggregate(total=Sum(F('items__price') * F('items__quantity')))['total']
+    # ✨ 核心修改：跨表计算总销售额 (排除已取消的订单，防止退款订单被计入销售额)
+    total_sales = Order.objects.exclude(status='Cancelled').aggregate(
+        total=Sum(F('items__price') * F('items__quantity'))
+    )['total']
     active_products = Product.objects.filter(available=True).count()
     pending_orders = Order.objects.filter(status='Pending').count()
     all_orders = Order.objects.all()
@@ -1162,7 +1176,7 @@ def checkout(request):
 
                 # ✨ 只有当 with 块里的所有操作都顺利完成了，才会走到这一步进行跳转
                 return redirect('order_confirmation', order_id=order.id)
-            
+
             except Exception as e:
                 # ✨ 捕获可能出现的任何数据库异常，退回购物车并友好提示
                 messages.error(request, f"Checkout failed: {str(e)}")
@@ -1226,7 +1240,7 @@ def order_process(request, order_id):
                     order.processed_at = timezone.now()
                 elif new_status == 'Cancelled':
                     order.cancelled_at = timezone.now()
-                    
+
                     # ✨ 核心机制：商家取消订单，退回库存 ✨
                     for item in order.items.all():
                         db_product = Product.objects.select_for_update().get(id=item.product.id)
@@ -1251,7 +1265,7 @@ def order_process(request, order_id):
 
     return render(request, 'order_process.html', {'order': order})
 
-# ✨✨✨ 核心修改：买家取消订单 (状态机+自动回仓) ✨✨✨
+# ✨✨✨ 核心修改：买家取消订单 (支持从详情页原地刷新) ✨✨✨
 @login_required
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
@@ -1261,19 +1275,23 @@ def cancel_order(request, order_id):
         with transaction.atomic():
             order.status = 'Cancelled'
             order.status_updated_at = timezone.now() # 更新通用时间
-            order.cancelled_at = timezone.now() 
-            
+            order.cancelled_at = timezone.now()
+
             # ✨ 核心机制：买家取消订单，自动退回库存 ✨
             for item in order.items.all():
                 db_product = Product.objects.select_for_update().get(id=item.product.id)
                 db_product.stock += item.quantity
                 db_product.save()
-                
+
             order.save()
         messages.success(request, f"Order #{order.id} has been cancelled successfully.")
     else:
         messages.error(request, "This order cannot be cancelled at this stage.")
 
+    # ✨ 核心修改：取消成功后，不再强制跳回订单列表，而是读取上一个页面的地址。
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
     return redirect(f"{reverse('user_profile')}?tab=orders")
 
 @login_required

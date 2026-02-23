@@ -223,7 +223,8 @@
 
         /* Reviews */
         .review-item { border-bottom: 1px solid #eee; padding: 20px 0; }
-        .review-product-link { font-weight: 700; color: #000; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; }
+        .review-product-link { font-weight: 700; color: #000; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; transition: opacity 0.2s;}
+        .review-product-link:hover { opacity: 0.7; }
         
         /* ✨ ADDED: Review Media Styles ✨ */
         .review-media-grid { display: flex; gap: 8px; margin-top: 12px; margin-bottom: 15px; }
@@ -596,8 +597,8 @@
                                         {% for item in order_items %}
                                         <tr>
                                             <td>
-                                                <div class="fw-bold">{{ item.product.product_name }}</div>
-                                                <div class="text-muted small">{{ item.product.brand }}</div>
+                                                <div><a href="{% url 'product_detail' item.product.id %}" class="review-product-link" style="font-size: 0.95rem;">{{ item.product.product_name }}</a></div>
+                                                <div class="text-muted small mt-1">{{ item.product.brand }}</div>
                                             </td>
                                             <td class="text-center">{{ item.quantity }}</td>
                                             <td class="text-end">${{ item.price }}</td>

@@ -225,6 +225,10 @@
         .review-item { border-bottom: 1px solid #eee; padding: 20px 0; }
         .review-product-link { font-weight: 700; color: #000; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; }
         
+        /* ✨ ADDED: Review Media Styles ✨ */
+        .review-media-grid { display: flex; gap: 8px; margin-top: 12px; margin-bottom: 15px; }
+        .review-media-item { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
+
         /* Appended Review Styles */
         .appended-review-box {
             margin-top: 15px;
@@ -916,7 +920,19 @@
                             </div>
                         </div>
                         
-                        <p class="mt-3 text-secondary">{{ review.comment }}</p>
+                        <p class="mt-3 text-secondary mb-2">{{ review.comment }}</p>
+
+                        {% if review.media.exists %}
+                        <div class="review-media-grid">
+                            {% for media in review.media.all|slice:":3" %}
+                                {% if media.media_type == 'image' %}
+                                    <img src="{{ media.file.url }}" class="review-media-item" onclick="window.open(this.src)">
+                                {% elif media.media_type == 'video' %}
+                                    <div class="review-media-item d-flex align-items-center justify-content-center bg-black text-white" style="font-size:10px;">VIDEO</div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
 
                         {% if review.appended_comment %}
                         <div class="appended-review-box mt-3 pt-3" style="border-top: 1px dashed #eee;">

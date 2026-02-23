@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from core.models import User
 # ✨ 核心修改：引入 ReviewLike
 from .models import ShippingAddress, Product, Category, Tag, Order, OrderItem, ProductImage, ShopProfile, Review, ReviewMedia, Cart, CartItem, ReviewLike
-from django.db.models import Sum, Q, F, Avg, Min, Max
+from django.db.models import Sum, Q, F, Avg, Min, Max, Count, Case, When, Value, IntegerField
 from django.contrib.auth import authenticate
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
@@ -186,47 +186,76 @@ def home(request):
             {'image': 'https://www.chanel.com/puls-img/c_limit,w_3200/q_auto:good,dpr_auto,f_auto/1764081681922-one-hpjoa-d-majorpush-5760x1800px_1800x5760.jpg', 'subtitle': 'Radiance', 'title': 'GOLDEN<br>DETAILS', 'filter': 'brightness(0.8)'}
         ]
 
-    # ==================== ✨ NEW: 智能推荐引擎 (Option B 核心算法) ✨ ====================
+    # ==================== ✨ NEW: 智能推荐引擎  ====================
+    thirty_days_ago = timezone.now() - timedelta(days=30)
 
-    # 策略 1: 全局热销榜 (Trending Now)
-    # 逻辑: 统计所有订单中每个商品的售出数量，取前 4 名。如果数量一样或没卖过，按上架最新排序。
+    # 策略 1: 全局热销榜 (Trending Now) - 引入“时间衰减 (Time-Decay)”
+    # 逻辑: 只统计【最近30天内】每个商品的售出数量，取前 4 名。如果数量一样或最近都没卖过，按最新上架排序列作为 Fallback 兜底。
     trending_products = Product.objects.filter(available=True, stock__gt=0).annotate(
-        total_sold=Coalesce(Sum('orderitem__quantity'), 0)
+        total_sold=Coalesce(
+            Sum('orderitem__quantity', filter=Q(orderitem__order__order_date__gte=thirty_days_ago)),
+            0
+        )
     ).order_by('-total_sold', '-id')[:4]
 
     curated_products = []
     if request.user.is_authenticated:
-        # 策略 2: 个性化猜你喜欢 (Curated For You)
+        # 策略 2: 个性化猜你喜欢 (Curated For You) - 解决冷启动问题 (Cold Start)
 
-        # a. 挖掘用户偏好：获取该用户过去买过的所有商品分类
-        bought_categories = OrderItem.objects.filter(
+        # a. 挖掘深度偏好 1：获取该用户过去买过的所有商品分类和商品ID
+        bought_categories = list(OrderItem.objects.filter(
             order__user=request.user
-        ).values_list('product__category', flat=True).distinct()
+        ).values_list('product__category', flat=True).distinct())
 
-        # b. 过滤已购商品：获取用户已经买过的商品ID，为了防止推荐他已经买过的东西
-        bought_product_ids = OrderItem.objects.filter(
+        bought_product_ids = list(OrderItem.objects.filter(
             order__user=request.user
-        ).values_list('product_id', flat=True).distinct()
+        ).values_list('product_id', flat=True).distinct())
 
-        # ✨ 核心修复：把兜底逻辑缩进到 if 里面！只有买过东西的人，才配拥有兜底推荐。
-        if bought_categories:
-            # c. 精准推荐：在用户买过的分类里，挑出他没买过的、且当前全站最畅销的商品
+        # b. 挖掘深度偏好 2：获取购物车里的商品分类和商品ID (预测当前购买意图)
+        try:
+            # 注意：请根据你的实际模型字段修改，如果是直接关联 user，就是 user=request.user
+            cart_categories = list(CartItem.objects.filter(
+                cart__user=request.user
+            ).values_list('product__category', flat=True).distinct())
+
+            cart_product_ids = list(CartItem.objects.filter(
+                cart__user=request.user
+            ).values_list('product_id', flat=True).distinct())
+        except NameError:
+            # 防错机制：如果顶部忘记 import CartItem，也不会报错崩溃
+            cart_categories = []
+            cart_product_ids = []
+
+        # 将已购和购物车的数据合并，并去重 (这就是该用户的综合偏好)
+        preferred_categories = list(set(bought_categories + cart_categories))
+
+        # 已经买过的，以及已经在购物车里的，都不再重复推荐
+        exclude_product_ids = list(set(bought_product_ids + cart_product_ids))
+
+        # ✨ 只要有偏好（无论是买过 还是 刚刚加了购物车），就触发精准推荐
+        if preferred_categories:
+            # c. 精准推荐：在用户的偏好分类里，挑出他没买过、没加购的、且近期最畅销的商品
             curated_qs = Product.objects.filter(
                 available=True,
                 stock__gt=0,
-                category__in=bought_categories
+                category__in=preferred_categories
             ).exclude(
-                id__in=bought_product_ids
+                id__in=exclude_product_ids
             ).annotate(
+                # 这里如果结合了优化一的 thirty_days_ago 效果会更好
                 total_sold=Coalesce(Sum('orderitem__quantity'), 0)
             ).order_by('-total_sold', '-id')[:4]
+
             curated_products = list(curated_qs)
 
-            # d. 智能兜底 (Fallback)：如果算出来的商品不足 4 个，用其他类目的热销款补齐，确保页面美观
+            # d. 智能兜底 (Fallback)：如果算出来的商品不足 4 个，用其他类目的热销款补齐
             if len(curated_products) < 4:
-                exclude_ids = list(bought_product_ids) + [p.id for p in curated_products]
-                fillers = Product.objects.filter(available=True, stock__gt=0).exclude(
-                    id__in=exclude_ids
+                fallback_exclude_ids = exclude_product_ids + [p.id for p in curated_products]
+                fillers = Product.objects.filter(
+                    available=True,
+                    stock__gt=0
+                ).exclude(
+                    id__in=fallback_exclude_ids
                 ).annotate(
                     total_sold=Coalesce(Sum('orderitem__quantity'), 0)
                 ).order_by('-total_sold', '-id')[:4 - len(curated_products)]
@@ -480,10 +509,64 @@ def append_review(request, review_id):
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    related_products = (
-        Product.objects.filter(category=product.category)
-        .exclude(id=product.id)[:4]
-    )
+
+    # ✨✨✨ 终极优化：深度浏览历史过滤，打破长链路死锁 ✨✨✨
+    # 1. 获取用户的浏览历史记录 (List)
+    recently_viewed = request.session.get('recently_viewed', [])
+
+    # 整理当前历史：如果当前商品在记录里，先抽出来；然后重新插入到最前面(代表最新看过)
+    if product.id in recently_viewed:
+        recently_viewed.remove(product.id)
+    recently_viewed.insert(0, product.id)
+
+    # 扩大记忆容量：保留最近浏览的 5 个商品 (如果你们商品变多，这里改成 10 都行)
+    recently_viewed = recently_viewed[:5]
+    request.session['recently_viewed'] = recently_viewed
+
+    # 2. 准备强力排除列表：直接把最近看过的这 5 个商品全部拉黑！
+    # 这样无论用户怎么在几个商品间反复横跳，底部的推荐永远是新鲜血液。
+    exclude_ids = list(recently_viewed)
+
+    # ✨✨✨ 必杀技功能二：Content-Based Filtering (多维度相似度推荐) ✨✨✨
+
+    current_tags = product.tags.all()
+
+    # 3. 核心推荐引擎：多维度相似度打分计算
+    similarity_qs = Product.objects.filter(
+        available=True,
+        stock__gt=0
+    ).exclude(
+        id__in=exclude_ids  # ✨ 魔法生效：瞬间过滤掉刚看过的 5 个商品！
+    ).annotate(
+        similarity_score=(
+            Case(When(category=product.category, then=Value(2)), default=Value(0), output_field=IntegerField()) +
+            Case(When(Q(brand=product.brand) & ~Q(brand=""), then=Value(1)), default=Value(0), output_field=IntegerField()) +
+            Case(When(Q(materials=product.materials) & ~Q(materials=""), then=Value(1)), default=Value(0), output_field=IntegerField()) +
+            Count('tags', filter=Q(tags__in=current_tags))
+        )
+    ).filter(
+        similarity_score__gt=0
+    ).order_by('-similarity_score', '-id')[:4]
+
+    related_products = list(similarity_qs)
+
+    # 4. Fallback 1: 同分类随机补齐 (同样叠加浏览历史过滤)
+    if len(related_products) < 4:
+        current_related_ids = exclude_ids + [p.id for p in related_products]
+        fillers = Product.objects.filter(
+            category=product.category,
+            available=True,
+            stock__gt=0
+        ).exclude(id__in=current_related_ids).order_by('?')[:4 - len(related_products)]
+        related_products.extend(list(fillers))
+
+    # 5. Fallback 2: 全站最新补齐 (同样叠加浏览历史过滤)
+    if len(related_products) < 4:
+        current_related_ids = exclude_ids + [p.id for p in related_products]
+        fallback_fillers = Product.objects.filter(
+            available=True, stock__gt=0
+        ).exclude(id__in=current_related_ids).order_by('-id')[:4 - len(related_products)]
+        related_products.extend(list(fallback_fillers))
 
     # 状态变量：用于在前端 Modal 中保留用户的输入，防止被清空
     error_message = None

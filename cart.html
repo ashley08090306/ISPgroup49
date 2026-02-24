@@ -245,7 +245,7 @@
                     <h3 class="summary-title">Summary</h3>
                     <div class="summary-row">
                         <span>Subtotal</span>
-                        <span>USD {{ cart_items|length|default:"0.00" }} items</span> 
+                        <span>USD {{ cart_items|length|default:"0.00" }} items</span>
                     </div>
                     <div class="summary-row text-muted">
                         <span>Shipping</span>
@@ -283,7 +283,7 @@
             const toastEl = document.createElement('div');
             toastEl.className = 'lux-toast';
             toastEl.setAttribute('role', 'alert');
-            
+
             toastEl.innerHTML = `
                 <div class="lux-toast-content">
                     <i class="bi ${isError ? 'bi-exclamation-circle text-danger' : 'bi-check2-circle text-success'} me-2"></i>
@@ -291,12 +291,12 @@
                 </div>
                 <button type="button" class="lux-toast-close" onclick="this.parentElement.remove()">&times;</button>
             `;
-            
+
             container.appendChild(toastEl);
-            
+
             // Trigger animation
             setTimeout(() => toastEl.classList.add('show'), 100);
-            
+
             // Auto remove
             const timer = setTimeout(() => {
                 toastEl.classList.remove('show');
@@ -369,5 +369,6 @@
             localStorage.setItem('userFontSize', size);
         }
     </script>
+    {% include 'heartbeat.html' %}
 </body>
 </html>

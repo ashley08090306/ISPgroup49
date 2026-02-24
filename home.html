@@ -1650,23 +1650,6 @@
             }
         }
     </script>
-
-    <script>
-        (function() {
-            const HEARTBEAT_URL = "{% url 'heartbeat' %}";
-            const INTERVAL = 20000;
-
-            function sendHeartbeat() {
-                fetch(HEARTBEAT_URL, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }).catch(err => console.log('Heartbeat failed:', err));
-            }
-
-            setInterval(sendHeartbeat, INTERVAL);
-        })();
-    </script>
+    {% include 'heartbeat.html' %}
 </body>
 </html>

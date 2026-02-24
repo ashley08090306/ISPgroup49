@@ -214,6 +214,17 @@
         }
         .admin-toast-close:hover { color: #fff; }
         .admin-toast.error { border-left-color: #ff6b6b; } /* 错误时显示红边 */
+
+        /* ✨✨ ADDED: 商品链接样式 ✨✨ */
+        .product-link {
+            color: #000;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .product-link:hover {
+            text-decoration: underline;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
@@ -299,7 +310,7 @@
                                             <ul class="list-unstyled mb-0 small">
                                                 {% for item in order.items.all %}
                                                 <li class="text-truncate mb-1" style="max-width: 250px;">
-                                                    <strong>{{ item.product.product_name }}</strong>
+                                                    <a href="{% url 'product_detail' item.product.id %}" class="product-link fw-bold">{{ item.product.product_name }}</a>
                                                     <span class="text-muted ms-1">x {{ item.quantity }}</span>
                                                 </li>
                                                 {% empty %}

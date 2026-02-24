@@ -42,6 +42,17 @@
         .info-label { font-size: 0.75rem; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 5px; }
         .info-value { font-size: 0.95rem; color: #000; font-weight: 500; }
 
+        /* ✨✨ ADDED: 商品链接样式 ✨✨ */
+        .product-link {
+            color: #000;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .product-link:hover {
+            text-decoration: underline;
+            opacity: 0.7;
+        }
+
         /* Timeline Style */
         .timeline-item { position: relative; padding-left: 20px; margin-bottom: 10px; border-left: 2px solid #eee; }
         .timeline-item::before { content: ''; position: absolute; left: -5px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
@@ -170,7 +181,9 @@
                                                         <div class="product-img d-flex align-items-center justify-content-center text-muted small">No Img</div>
                                                     {% endif %}
                                                     <div>
-                                                        <div class="fw-bold">{{ item.product.product_name }}</div>
+                                                        <div class="fw-bold">
+                                                            <a href="{% url 'product_detail' item.product.id %}" class="product-link">{{ item.product.product_name }}</a>
+                                                        </div>
                                                         <div class="small text-muted">ID: {{ item.product.id }}</div>
                                                         <div class="small text-muted">Brand: {{ item.product.brand }}</div>
                                                     </div>
@@ -501,5 +514,6 @@
             });
         });
     </script>
+    {% include 'heartbeat.html' %}
 </body>
 </html>

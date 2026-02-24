@@ -278,7 +278,7 @@
                     const toastEl = document.getElementById('rateLimitToast');
                     const toast = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3秒后自动淡出消失
                     toast.show();
-                    
+
                     btnElement.disabled = false;
                     return Promise.reject('Rate limited');
                 }
@@ -288,7 +288,7 @@
                 if (data.status === 'success') {
                     const icon = btnElement.querySelector('i');
                     const countSpan = btnElement.querySelector('.like-count');
-                    
+
                     if (data.is_liked) {
                         icon.classList.remove('bi-heart');
                         icon.classList.add('bi-heart-fill', 'text-dark');
@@ -306,5 +306,6 @@
             });
         }
     </script>
+    {% include 'heartbeat.html' %}
 </body>
 </html>

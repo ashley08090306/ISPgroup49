@@ -194,7 +194,7 @@
                         <div class="item-name">{{ item.product.product_name }}</div>
                         <div class="item-detail">Ref: {{ item.product.id }}</div>
                         <div class="item-detail">Quantity: {{ item.quantity }}</div>
-                        
+
                         <div class="item-price">${{ item.price }}</div>
                     </div>
                     <div class="text-end fw-bold">
@@ -237,5 +237,6 @@
         </div>
     </div>
 
+    {% include 'heartbeat.html' %}
 </body>
 </html>

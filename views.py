@@ -44,7 +44,11 @@ def home(request):
         # ==================== 核心修改2：去除无意义的冠词 (Stop Words) ====================
         # 解决 "太阳" -> "The sun" 导致搜索失败的问题
         # 我们只保留核心名词，去除 the, a, an 等
-        stop_words = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for'}
+        # ==================== 核心修改2：去除无意义的词和符号 ====================
+        stop_words = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'and'}
+
+        # ✨ 修复点1：在拆分之前，把 '&' 这种容易破坏正则边界的特殊符号替换成空格
+        search_query_for_db = search_query_for_db.replace('&', ' ').replace('-', ' ')
 
         # 拆分关键词
         raw_keywords = search_query_for_db.split()
@@ -52,14 +56,19 @@ def home(request):
         # 过滤关键词：保留非停用词，或者如果是CJK字符(不用管停用词)
         keywords = []
         for k in raw_keywords:
+            # ✨ 修复点2：如果拆出来的词全都是标点符号（比如单独敲了一个 "+"），直接跳过
+            if not re.search(r'[a-zA-Z0-9\u4e00-\u9fa5\u3040-\u30ff]', k):
+                continue
+                
             # 如果是纯英文且在停用词表中，跳过
             if re.match(r'^[a-zA-Z]+$', k) and k.lower() in stop_words:
                 continue
             keywords.append(k)
 
-        # 如果过滤完没词了(比如用户就搜了"The")，就回退到原始列表
+        # 如果过滤完没词了(比如用户就搜了"The &")，就回退到原始列表（避免查不到东西报错）
         if not keywords:
-            keywords = raw_keywords
+            # 去除纯符号后，至少拿原本 split 的词顶上
+            keywords = [k for k in search_query.split() if re.search(r'[a-zA-Z0-9\u4e00-\u9fa5]', k)] or search_query.split()
 
         # ==================== 构建查询 ====================
         query_filter = Q()

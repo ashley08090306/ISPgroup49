@@ -24,110 +24,115 @@ from django.db.models.functions import Coalesce # ✨ NEW: 用于推荐系统处
 def home(request):
     base_qs = Product.objects.filter(available=True, stock__gt=0)
 
-    # ✨✨✨ 获取搜索关键词 ✨✨✨
+# ✨✨✨ 获取搜索关键词 ✨✨✨
     search_query = request.GET.get('q', '').strip()
 
     # 🌟 NEW: 用于数据库查询的关键词
     search_query_for_db = search_query
 
     if search_query:
+
         # ==================== 核心修改1：智能翻译 ====================
-        try:
-            from deep_translator import GoogleTranslator
-            # 自动检测 -> 翻译为英文
-            search_query_for_db = GoogleTranslator(source='auto', target='en').translate(search_query)
-            print(f"🌍 [Search] Input: '{search_query}' -> Translated: '{search_query_for_db}'")
-        except Exception as e:
-            print(f"⚠️ [Search Error] Translation failed: {e}")
-            search_query_for_db = search_query
+        if re.search(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', search_query):
+            try:
+                from deep_translator import GoogleTranslator
+                translated_text = GoogleTranslator(source='auto', target='en').translate(search_query)
+                translated_text = (translated_text or "").strip()
+                if translated_text:
+                    search_query_for_db = translated_text
+            except Exception as e:
+                print(f"⚠️ [Search Error] Translation failed: {e}")
+                search_query_for_db = search_query
 
-        # ==================== 核心修改2：去除无意义的冠词 (Stop Words) ====================
-        # 解决 "太阳" -> "The sun" 导致搜索失败的问题
-        # 我们只保留核心名词，去除 the, a, an 等
-        # ==================== 核心修改2：去除无意义的词和符号 ====================
-        stop_words = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'and'}
+        search_query_for_db = str(search_query_for_db)
 
-        # ✨ 修复点1：在拆分之前，把 '&' 这种容易破坏正则边界的特殊符号替换成空格
-        search_query_for_db = search_query_for_db.replace('&', ' ').replace('-', ' ')
+        # ==================== 核心修改2：统一清理符号 ====================
+        # ✨ 微调：去掉了 'to'，防止它被误杀
+        stop_words = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'for', 'and'}
 
-        # 拆分关键词
+        search_query_for_db = re.sub(r'[^#A-Za-z0-9\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]+', ' ', search_query_for_db)
+
         raw_keywords = search_query_for_db.split()
 
-        # 过滤关键词：保留非停用词，或者如果是CJK字符(不用管停用词)
         keywords = []
         for k in raw_keywords:
-            # ✨ 修复点2：如果拆出来的词全都是标点符号（比如单独敲了一个 "+"），直接跳过
-            if not re.search(r'[a-zA-Z0-9\u4e00-\u9fa5\u3040-\u30ff]', k):
+            if k == '#':
                 continue
-                
-            # 如果是纯英文且在停用词表中，跳过
             if re.match(r'^[a-zA-Z]+$', k) and k.lower() in stop_words:
                 continue
             keywords.append(k)
 
-        # 如果过滤完没词了(比如用户就搜了"The &")，就回退到原始列表（避免查不到东西报错）
         if not keywords:
-            # 去除纯符号后，至少拿原本 split 的词顶上
-            keywords = [k for k in search_query.split() if re.search(r'[a-zA-Z0-9\u4e00-\u9fa5]', k)] or search_query.split()
+            keywords = raw_keywords
 
         # ==================== 构建查询 ====================
         query_filter = Q()
 
         for keyword in keywords:
-            tag_keyword = keyword.lstrip('#')
-            k_len = len(keyword)
+            is_hashtag = keyword.startswith('#')
+            search_token = keyword.lstrip('#')
+            k_len = len(search_token)
 
-            # 判断是否为中日韩字符
-            is_cjk = bool(re.search(r'[\u4e00-\u9fa5\u3040-\u30ff]', keyword))
+            if not search_token:
+                continue
+
             or_lookup = Q()
 
-            if is_cjk:
-                # CJK 宽泛匹配
-                if k_len == 1:
-                    or_lookup = (
-                        Q(product_name__icontains=keyword) |
-                        Q(brand__icontains=keyword) |
-                        Q(category__category_name__icontains=keyword) |
-                        Q(tags__tag_name__icontains=tag_keyword)
-                    )
-                else:
-                    or_lookup = (
-                        Q(product_name__icontains=keyword) |
-                        Q(brand__icontains=keyword) |
-                        Q(category__category_name__icontains=keyword) |
-                        Q(description__icontains=keyword) |
-                        Q(materials__icontains=keyword) |
-                        Q(tags__tag_name__icontains=tag_keyword)
-                    )
+            if is_hashtag:
+                or_lookup = Q(tags__tag_name__icontains=search_token)
             else:
-                # 英文匹配逻辑
-                pattern = r'\b' + re.escape(keyword)
+                is_cjk = bool(re.search(r'[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]', search_token))
 
-                if k_len <= 2:
-                    # 极短词 (如 "Go")：严格匹配单词边界
-                    or_lookup = Q(product_name__iregex=pattern)
-                elif k_len < 5:
-                    # 短词 (如 "Sun", "Ring")：匹配名字、品牌、分类、标签
-                    # ✨ 修复：增加了 description 匹配，防止漏网之鱼，但在排序时产品名优先
-                    or_lookup = (
-                        Q(product_name__iregex=pattern) |
-                        Q(brand__iregex=pattern) |
-                        Q(category__category_name__iregex=pattern) |
-                        Q(description__icontains=keyword) | # 放宽这里，允许匹配描述
-                        Q(materials__iregex=pattern) |
-                        Q(tags__tag_name__icontains=tag_keyword)
-                    )
+                if is_cjk:
+                    if k_len == 1:
+                        or_lookup = (
+                            Q(product_name__icontains=search_token) |
+                            Q(brand__icontains=search_token) |
+                            Q(category__category_name__icontains=search_token)
+                        )
+                    else:
+                        or_lookup = (
+                            Q(product_name__icontains=search_token) |
+                            Q(brand__icontains=search_token) |
+                            Q(category__category_name__icontains=search_token) |
+                            Q(description__icontains=search_token) |
+                            Q(materials__icontains=search_token) |
+                            Q(tags__tag_name__icontains=search_token)
+                        )
                 else:
-                    # 长词：全面宽泛匹配
-                    or_lookup = (
-                        Q(product_name__iregex=pattern) |
-                        Q(brand__iregex=pattern) |
-                        Q(category__category_name__iregex=pattern) |
-                        Q(description__iregex=pattern) |
-                        Q(materials__iregex=pattern) |
-                        Q(tags__tag_name__icontains=tag_keyword)
-                    )
+                    # ✨ 核心逻辑：用 icontains 满足内部查找需求，靠“分配字段”来防噪
+                    if k_len <= 2:
+                        # 极短词 (如 "to", "MO")：只搜名称和品牌！
+                        # "to" 成功匹配 Portofino (在名称里)
+                        # "MO" 拒绝匹配 diamond (因为 diamond 在标签里，这里不查标签)
+                        or_lookup = (
+                            Q(product_name__icontains=search_token) |
+                            Q(brand__icontains=search_token)
+                        )
+                    elif k_len <= 4:
+                        # 短词 (如 "ring", "Liu")：可以搜标签，但绝对不搜 description！
+                        # "Liu" 能找回 #Yifei Liu (在标签里)
+                        # "ring" 不会匹配 enduring (在描述里，这里不查描述)
+                        or_lookup = (
+                            Q(product_name__icontains=search_token) |
+                            Q(brand__icontains=search_token) |
+                            Q(category__category_name__icontains=search_token) |
+                            Q(materials__icontains=search_token) |
+                            Q(tags__tag_name__icontains=search_token)
+                        )
+                    else:
+                        # 长词：全面放开匹配
+                        or_lookup = (
+                            Q(product_name__icontains=search_token) |
+                            Q(brand__icontains=search_token) |
+                            Q(category__category_name__icontains=search_token) |
+                            Q(description__icontains=search_token) |
+                            Q(materials__icontains=search_token) |
+                            Q(tags__tag_name__icontains=search_token)
+                        )
+
             query_filter &= or_lookup
+
         base_qs = base_qs.filter(query_filter).distinct()
 
     category_id = request.GET.get('category')
@@ -515,7 +520,6 @@ def append_review(request, review_id):
     return redirect(f"{reverse('user_profile')}?tab=reviews")
 
 # ==================== 商品详情与评论 ====================
-
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -536,7 +540,7 @@ def product_detail(request, product_id):
     # 这样无论用户怎么在几个商品间反复横跳，底部的推荐永远是新鲜血液。
     exclude_ids = list(recently_viewed)
 
-    # ✨✨✨ 必杀技功能二：Content-Based Filtering (多维度相似度推荐) ✨✨✨
+    # ✨✨✨ 必杀技功能二：Content-Based Filtering (多维度相似度推荐 - You May Also Like) ✨✨✨
 
     current_tags = product.tags.all()
 
@@ -576,6 +580,48 @@ def product_detail(request, product_id):
             available=True, stock__gt=0
         ).exclude(id__in=current_related_ids).order_by('-id')[:4 - len(related_products)]
         related_products.extend(list(fallback_fillers))
+
+    # ==========================================
+    # ✨✨✨ 必杀技功能三：Market Basket Analysis (经常一起购买 - Commonly Purchased Together) ✨✨✨
+    # ==========================================
+
+    # 提取所有展示过的推荐商品ID，防止 "经常一起购买" 和 "猜你喜欢" 出现重复的商品
+    current_displayed_ids = exclude_ids + [p.id for p in related_products]
+
+    # A. 找出所有包含当前商品的、已付款(Processed)的订单ID
+    orders_with_this_product = OrderItem.objects.filter(
+        product=product,
+        order__status='Processed'
+    ).values_list('order__id', flat=True)
+
+    # B. 去这些订单里找“其他商品”，按出现次数排序
+    fbt_qs = Product.objects.filter(
+        orderitem__order__id__in=orders_with_this_product,
+        available=True,
+        stock__gt=0
+    ).exclude(
+        id__in=current_displayed_ids # 排除当前商品、最近看过的、以及上面 You May Also Like 已经推荐过的
+    ).annotate(
+        times_bought_together=Count('orderitem')
+    ).order_by('-times_bought_together')[:3] # 取前3名
+
+    frequently_bought_together = list(fbt_qs)
+
+    # C. Fallback: 如果新品没人买过，或者真实一起购买的数据不足 3 个，用同分类且不同材质的商品假装搭配
+    if len(frequently_bought_together) < 3:
+        fbt_exclude_ids = current_displayed_ids + [p.id for p in frequently_bought_together]
+        fbt_fillers = Product.objects.filter(
+            category=product.category,
+            available=True,
+            stock__gt=0
+        ).exclude(
+            id__in=fbt_exclude_ids
+        ).exclude(
+            materials=product.materials # 假装搭配：比如看金项链，就推银项链或皮质项链
+        ).order_by('?')[:3 - len(frequently_bought_together)]
+        frequently_bought_together.extend(list(fbt_fillers))
+
+    # ==========================================
 
     # 状态变量：用于在前端 Modal 中保留用户的输入，防止被清空
     error_message = None
@@ -697,6 +743,7 @@ def product_detail(request, product_id):
     context = {
         'product': product,
         'related_products': related_products,
+        'frequently_bought_together': frequently_bought_together, # ✨ 新增：传递给前端的搭配购买数据
         'reviews': reviews_list,
         'total_reviews': total_reviews,
         'avg_rating': avg_rating,

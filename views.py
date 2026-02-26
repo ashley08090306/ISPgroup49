@@ -587,39 +587,51 @@ def product_detail(request, product_id):
 
     # 提取所有展示过的推荐商品ID，防止 "经常一起购买" 和 "猜你喜欢" 出现重复的商品
     current_displayed_ids = exclude_ids + [p.id for p in related_products]
+    target_fbt_count = 4
 
-    # A. 找出所有包含当前商品的、已付款(Processed)的订单ID
+    # A. 找出真实一起购买过的数据
     orders_with_this_product = OrderItem.objects.filter(
         product=product,
         order__status='Processed'
     ).values_list('order__id', flat=True)
 
-    # B. 去这些订单里找“其他商品”，按出现次数排序
     fbt_qs = Product.objects.filter(
         orderitem__order__id__in=orders_with_this_product,
         available=True,
         stock__gt=0
     ).exclude(
-        id__in=current_displayed_ids # 排除当前商品、最近看过的、以及上面 You May Also Like 已经推荐过的
+        id__in=current_displayed_ids
     ).annotate(
         times_bought_together=Count('orderitem')
-    ).order_by('-times_bought_together')[:3] # 取前3名
+    ).order_by('-times_bought_together')[:target_fbt_count]
 
     frequently_bought_together = list(fbt_qs)
 
-    # C. Fallback: 如果新品没人买过，或者真实一起购买的数据不足 3 个，用同分类且不同材质的商品假装搭配
-    if len(frequently_bought_together) < 3:
+    # ✨ 核心修复：两级强力兜底机制 ✨
+    # B. 兜底第一层：找同品牌、但【不同分类】的商品（真实穿搭逻辑：买戒指推项链）
+    if len(frequently_bought_together) < target_fbt_count:
         fbt_exclude_ids = current_displayed_ids + [p.id for p in frequently_bought_together]
-        fbt_fillers = Product.objects.filter(
-            category=product.category,
+        fbt_fillers_1 = Product.objects.filter(
+            brand=product.brand,
+            available=True,
+            stock__gt=0
+        ).exclude(
+            category=product.category # 跨分类推荐！
+        ).exclude(
+            id__in=fbt_exclude_ids
+        ).order_by('?')[:target_fbt_count - len(frequently_bought_together)]
+        frequently_bought_together.extend(list(fbt_fillers_1))
+
+    # C. 兜底第二层（终极防线）：如果上面还是凑不够，全站随机抓取没展示过的商品！只要库里有货，绝对不可能填不满！
+    if len(frequently_bought_together) < target_fbt_count:
+        fbt_exclude_ids = current_displayed_ids + [p.id for p in frequently_bought_together]
+        fbt_fillers_2 = Product.objects.filter(
             available=True,
             stock__gt=0
         ).exclude(
             id__in=fbt_exclude_ids
-        ).exclude(
-            materials=product.materials # 假装搭配：比如看金项链，就推银项链或皮质项链
-        ).order_by('?')[:3 - len(frequently_bought_together)]
-        frequently_bought_together.extend(list(fbt_fillers))
+        ).order_by('?')[:target_fbt_count - len(frequently_bought_together)]
+        frequently_bought_together.extend(list(fbt_fillers_2))
 
     # ==========================================
 

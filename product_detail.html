@@ -129,10 +129,10 @@
         .search-header { text-align: center; position: relative; margin-bottom: 60px; }
         .search-title { font-family: 'Inter', sans-serif; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.2em; color: #555; font-weight: 400; }
         .btn-close-search { position: absolute; right: 0; top: 0; font-size: 1.5rem; cursor: pointer; background: none; border: none; }
-        
+
         .search-input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; border-bottom: 1px solid #000; position: relative; display: flex; align-items: center; }
         .search-input { width: 100%; border: none; font-size: 1.5rem; font-family: 'Playfair Display', serif; padding: 15px 0; padding-right: 50px; outline: none; text-transform: uppercase; background: transparent; }
-        
+
         /* Mic Button Styles */
         .btn-voice-search { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; transition: all 0.3s; }
         .btn-voice-search:hover { color: #000; }
@@ -330,7 +330,7 @@
         <form action="{% url 'home' %}" method="GET" class="w-100">
             <div class="search-input-wrapper">
                 <input type="text" name="q" id="mainSearchInput" class="search-input" placeholder="SEARCH..." autofocus autocomplete="off" value="{{ request.GET.q|default:'' }}">
-                
+
                 <button type="button" class="btn-voice-search" onclick="startVoiceRecognition()" title="Speak to Search">
                     <i class="bi bi-mic"></i>
                 </button>
@@ -678,6 +678,28 @@
             </div>
         </div>
 
+        {% if frequently_bought_together %}
+        <div class="related-section">
+            <h3 class="section-title">Commonly Purchased Together</h3>
+            <div class="row justify-content-center">
+                {% for related in frequently_bought_together %}
+                <div class="col-6 col-md-3 mb-4">
+                    <a href="{% url 'product_detail' related.id %}" class="text-decoration-none">
+                        <div class="related-card">
+                            {% if related.images.first %}
+                                <img src="{{ related.images.first.image.url }}" alt="{{ related.product_name }}">
+                            {% else %}
+                                <div style="height:300px; background:#f9f9f9;"></div>
+                            {% endif %}
+                            <span class="related-name mt-2">{{ related.product_name }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         {% if related_products %}
         <div class="related-section">
             <h3 class="section-title">You May Also Like</h3>
@@ -725,10 +747,10 @@
                 <button type="button" class="lux-toast-close">&times;</button>
             `;
             container.appendChild(toast);
-            
+
             // Trigger animation
             setTimeout(() => toast.classList.add('show'), 100);
-            
+
             // Auto remove
             const timer = setTimeout(() => {
                 toast.classList.remove('show');
@@ -827,7 +849,7 @@
                         fly.style.width = '20px'; fly.style.height = '20px'; fly.style.opacity = '0';
                     }, 10);
                     setTimeout(() => fly.remove(), 800);
-                } else { 
+                } else {
                     showToast(data.message, true);
                 }
             });
@@ -975,7 +997,7 @@
             recognition.onstart = function() {
                 micBtn.classList.add('listening');
                 statusSpan.innerHTML = `<i class="bi bi-record-circle-fill me-2"></i> Listening (${displayLangName})...`;
-                statusSpan.className = "status-listening active"; 
+                statusSpan.className = "status-listening active";
                 searchInput.placeholder = "Listening...";
             };
 
@@ -1003,11 +1025,11 @@
                 micBtn.classList.remove('listening');
 
                 statusSpan.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2"></i> Error: Try Again`;
-                statusSpan.className = "status-error active"; 
+                statusSpan.className = "status-error active";
             };
         }
     </script>
-    
+
     {% if has_error_modal %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {

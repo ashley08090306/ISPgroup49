@@ -14,6 +14,11 @@
         if (savedSize) {
             document.documentElement.style.fontSize = savedSize;
         }
+        // ✨ NEW: 提前加载视图偏好，防止页面刷新时发生排版闪烁
+        const savedViewMode = localStorage.getItem('productViewMode') || 'grid';
+        if (savedViewMode === 'list') {
+            document.documentElement.classList.add('preload-list-view');
+        }
     </script>
 
     <style>
@@ -476,6 +481,11 @@
             text-align: center;
         }
 
+        /* ✨ NEW: Added brand label style to match product detail and support list view */
+        .product-brand-label {
+            font-size: 0.7rem; letter-spacing: 0.1em; color: #666; text-transform: uppercase; margin-bottom: 5px; display: block;
+        }
+
         .product-name {
             font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
@@ -493,6 +503,43 @@
             font-size: 0.9rem;
             color: #333;
         }
+
+        /* ============================================================== */
+        /* ✨✨✨ NEW: LIST VIEW CSS STYLES (网易云同款列表布局) ✨✨✨ */
+        /* ============================================================== */
+        .product-view-container.list-view .row {
+            display: flex; flex-direction: column; align-items: stretch;
+        }
+        .product-view-container.list-view .col-6.col-md-3 {
+            width: 100%; max-width: 100%; flex: 0 0 100%;
+        }
+        .product-view-container.list-view .product-card {
+            display: flex; flex-direction: row; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px;
+        }
+        .product-view-container.list-view .product-card > a {
+            flex: 0 0 200px; /* 固定列表视图中的图片宽度 */
+            margin-right: 30px;
+        }
+        .product-view-container.list-view .product-img-container {
+            margin-bottom: 0; padding-top: 100%; /* 保持正方形 */
+        }
+        .product-view-container.list-view .product-info {
+            flex: 1; text-align: left; display: flex; flex-direction: column; justify-content: center;
+        }
+        .product-view-container.list-view .product-name {
+            font-size: 1.1rem; margin-bottom: 10px;
+        }
+        .product-view-container.list-view .product-price {
+            font-size: 1rem; font-weight: 500;
+        }
+        
+        /* Preload 防闪烁补丁 */
+        html.preload-list-view .product-view-container .row { display: flex; flex-direction: column; }
+        html.preload-list-view .product-view-container .col-6.col-md-3 { width: 100%; }
+        html.preload-list-view .product-view-container .product-card { display: flex; flex-direction: row; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        html.preload-list-view .product-view-container .product-card > a { flex: 0 0 200px; margin-right: 30px; }
+        html.preload-list-view .product-view-container .product-img-container { margin-bottom: 0; }
+        html.preload-list-view .product-view-container .product-info { text-align: left; }
 
         /* === Footer === */
         .footer {
@@ -516,7 +563,7 @@
             color: #fff;
         }
 
-        /* === FILTER UI === */
+        /* === FILTER UI & TOGGLE UI === */
         .filter-bar-container {
             display: flex;
             justify-content: space-between;
@@ -524,6 +571,12 @@
             padding: 15px 0 25px;
             margin-bottom: 10px;
             border-bottom: 1px solid #eee;
+        }
+
+        .filter-controls-left {
+            display: flex;
+            align-items: center;
+            gap: 20px; /* 控制 Filter按钮和视图切换按钮之间的距离 */
         }
 
         .btn-filter {
@@ -539,8 +592,19 @@
             cursor: pointer;
             transition: opacity 0.2s;
             color: var(--chanel-black);
+            padding: 0; /* 清除默认padding方便对齐 */
         }
         .btn-filter:hover { opacity: 0.6; }
+
+        /* ✨ View Toggle Buttons Styles ✨ */
+        .view-toggle-btns {
+            display: flex; align-items: center; gap: 10px; border-left: 1px solid #ddd; padding-left: 20px;
+        }
+        .btn-view-mode {
+            background: none; border: none; font-size: 1.2rem; color: #ccc; cursor: pointer; transition: color 0.2s; padding: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-view-mode:hover { color: #888; }
+        .btn-view-mode.active { color: #000; }
 
         .product-count {
             font-size: 0.85rem;
@@ -715,7 +779,7 @@
             margin-bottom: 8px;
         }
 
-        /* ✨✨✨ Pagination & Jump UI (From User Profile) ✨✨✨ */
+        /* ✨✨✨ Pagination & Jump UI ✨✨✨ */
         .custom-page-link {
             width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
             border-radius: 4px !important; border: 1px solid #dee2e6;
@@ -748,6 +812,7 @@
             .product-grid-section { padding: 20px 15px; }
             .carousel-hero-item { height: 70vh; }
             .filter-drawer { width: 100%; right: -100%; }
+            .view-toggle-btns { display: none; } /* Mobile端强制隐藏切换按钮，只保留Grid */
         }
     </style>
 </head>
@@ -951,7 +1016,7 @@
                                 </div>
                             </a>
                             <div class="product-info">
-                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
+                                <span class="product-brand-label">{{ product.brand|default:"" }}</span>
                                 <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
                                 <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
                                     {% if product.stock <= 0 %}
@@ -983,7 +1048,7 @@
                                 </div>
                             </a>
                             <div class="product-info">
-                                <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
+                                <span class="product-brand-label">{{ product.brand|default:"" }}</span>
                                 <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
                                 <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
                                     {% if product.stock <= 0 %}
@@ -1018,58 +1083,68 @@
     <section id="collection" class="product-grid-section">
         <div class="container">
             <div class="filter-bar-container">
-                <button class="btn-filter" onclick="toggleFilterDrawer()">
-                    <i class="bi bi-sliders2"></i> FILTERS
-                </button>
+                <div class="filter-controls-left">
+                    <button class="btn-filter" onclick="toggleFilterDrawer()">
+                        <i class="bi bi-sliders2"></i> FILTERS
+                    </button>
+                    <div class="view-toggle-btns d-none d-md-flex">
+                        <button class="btn-view-mode active" id="btnGridView" onclick="setViewMode('grid')" title="Grid View">
+                            <i class="bi bi-grid"></i>
+                        </button>
+                        <button class="btn-view-mode" id="btnListView" onclick="setViewMode('list')" title="List View">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+                    </div>
+                </div>
                 <span class="product-count">{{ products.paginator.count }} PRODUCTS</span>
             </div>
 
-            <div class="row g-4">
-                {% for product in products %}
-                <div class="col-6 col-md-3">
-                    <div class="product-card">
-                        <a href="{% url 'product_detail' product.id %}">
-                            <div class="product-img-container">
-                                {% if product.images.first %}
-                                    <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
-
-                                {% elif product.video %}
-                                    <video src="{{ product.video.url }}"
-                                           class="product-video-preview"
-                                           muted
-                                           loop
-                                           playsinline
-                                           onmouseover="this.play()"
-                                           onmouseout="this.pause()">
-                                    </video>
-
-                                {% else %}
-                                    <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">
-                                        No Image
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </a>
-                        <div class="product-info">
-                            <div class="small text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.1em;">{{ product.brand|default:"" }}</div>
-                            <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
-                            <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
-                                {% if product.stock <= 0 %}
-                                    <span class="text-muted text-decoration-line-through">Sold Out</span>
-                                {% else %}
-                                    USD {{ product.price }}
-                                {% endif %}
+            <div class="product-view-container" id="productViewContainer">
+                <div class="row g-4">
+                    {% for product in products %}
+                    <div class="col-6 col-md-3">
+                        <div class="product-card">
+                            <a href="{% url 'product_detail' product.id %}">
+                                <div class="product-img-container">
+                                    {% if product.images.first %}
+                                        <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}" class="product-img">
+                                    {% elif product.video %}
+                                        <video src="{{ product.video.url }}"
+                                               class="product-video-preview"
+                                               muted
+                                               loop
+                                               playsinline
+                                               onmouseover="this.play()"
+                                               onmouseout="this.pause()">
+                                        </video>
+                                    {% else %}
+                                        <div class="product-img d-flex align-items-center justify-content-center bg-light text-muted small text-uppercase">
+                                            No Image
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            <div class="product-info">
+                                <span class="product-brand-label">{{ product.brand|default:"" }}</span>
+                                <a href="{% url 'product_detail' product.id %}" class="product-name">{{ product.product_name }}</a>
+                                <div class="product-price text-uppercase small" style="letter-spacing: 1px;">
+                                    {% if product.stock <= 0 %}
+                                        <span class="text-muted text-decoration-line-through">Sold Out</span>
+                                    {% else %}
+                                        USD {{ product.price }}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <h3 class="font-serif mb-3">No products found.</h3>
+                        <p class="text-muted">Try a different search term or category.</p>
+                        <a href="{% url 'home' %}" class="btn btn-outline-dark rounded-0 px-4 mt-3 text-uppercase" style="letter-spacing: 1px;">View All Collections</a>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% empty %}
-                <div class="col-12 text-center py-5">
-                    <h3 class="font-serif mb-3">No products found.</h3>
-                    <p class="text-muted">Try a different search term or category.</p>
-                    <a href="{% url 'home' %}" class="btn btn-outline-dark rounded-0 px-4 mt-3 text-uppercase" style="letter-spacing: 1px;">View All Collections</a>
-                </div>
-                {% endfor %}
             </div>
 
             {% if products.has_other_pages %}
@@ -1366,6 +1441,36 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // ✨✨✨ NEW: View Mode Toggle Logic ✨✨✨
+        function setViewMode(mode) {
+            const container = document.getElementById('productViewContainer');
+            const btnGrid = document.getElementById('btnGridView');
+            const btnList = document.getElementById('btnListView');
+
+            if (!container) return;
+
+            if (mode === 'list') {
+                container.classList.add('list-view');
+                if (btnList) btnList.classList.add('active');
+                if (btnGrid) btnGrid.classList.remove('active');
+            } else {
+                container.classList.remove('list-view');
+                if (btnGrid) btnGrid.classList.add('active');
+                if (btnList) btnList.classList.remove('active');
+            }
+            
+            // Save preference to localStorage so it persists across refreshes
+            localStorage.setItem('productViewMode', mode);
+        }
+
+        // Initialize view mode on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Remove preload class to enable smooth CSS transitions hereafter
+            document.documentElement.classList.remove('preload-list-view');
+            const savedMode = localStorage.getItem('productViewMode') || 'grid';
+            setViewMode(savedMode);
+        });
+
         function toggleSearch() {
             const overlay = document.getElementById('searchOverlay');
             overlay.classList.toggle('active');
@@ -1376,29 +1481,25 @@
             }
         }
 
-        // === ✨ NEW: Tab Switch Logic for Recommendations ✨ ===
+        // === Tab Switch Logic for Recommendations ===
         function switchTab(element, tabId) {
-            // Remove active state from all buttons
             const tabsContainer = element.parentElement;
             tabsContainer.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active', 'text-dark');
                 if(!btn.classList.contains('text-muted')) btn.classList.add('text-muted');
             });
 
-            // Add active state to clicked button
             element.classList.add('active', 'text-dark');
             element.classList.remove('text-muted');
 
-            // Hide all content rows
             document.querySelectorAll('.tab-content-row').forEach(row => {
                 row.classList.remove('active');
                 row.style.display = 'none';
             });
 
-            // Show target content row
             const targetRow = document.getElementById('tab-' + tabId);
             if (targetRow) {
-                targetRow.style.display = ''; // Restore to CSS flex
+                targetRow.style.display = ''; 
                 targetRow.classList.add('active');
             }
         }
@@ -1407,7 +1508,6 @@
         function toggleFilterDrawer() {
             document.getElementById('filterDrawer').classList.toggle('active');
             document.getElementById('filterOverlay').classList.toggle('active');
-            // Trigger visual update on open to ensure slider track is correct
             updateSliderVisuals();
             filterPreview();
         }
@@ -1420,17 +1520,14 @@
         const hiddenMin = document.getElementById('inputMinPrice');
         const hiddenMax = document.getElementById('inputMaxPrice');
         const sliderTrack = document.getElementById('sliderTrack');
-        const minGap = 0; // Allow 0 gap since we handle inputs
+        const minGap = 0; 
 
-        // Sync Slider -> Inputs
         function handleSliderChange() {
             let val1 = parseInt(rangeMin.value);
             let val2 = parseInt(rangeMax.value);
 
             if (val1 > val2) {
-                // Prevent crossover
                 const tmp = val1; val1 = val2; val2 = tmp;
-                // visually swap controls logic would be complex, simpler to just clamp
                 if (event.target === rangeMin) { rangeMin.value = val2; }
                 else { rangeMax.value = val1; }
             }
@@ -1444,16 +1541,13 @@
             filterPreview();
         }
 
-        // Sync Inputs -> Slider
         function handleInputChange() {
             let val1 = parseInt(inputMinDisplay.value);
             let val2 = parseInt(inputMaxDisplay.value);
 
-            // Constrain
             if (val1 < globalMin) val1 = globalMin;
             if (val2 > globalMax) val2 = globalMax;
             if (val1 > val2) {
-                // If user typed min > max, swap them
                 const tmp = val1; val1 = val2; val2 = tmp;
             }
 
@@ -1469,18 +1563,15 @@
             filterPreview();
         }
 
-        // Visual Gradient Logic (Black Center, Gray Edges)
         function updateSliderVisuals() {
             if(!rangeMin || !rangeMax) return;
             const minVal = parseInt(rangeMin.value);
             const maxVal = parseInt(rangeMax.value);
             const totalRange = globalMax - globalMin;
 
-            // Calculate percentages for gradient
             const percent1 = ((minVal - globalMin) / totalRange) * 100;
             const percent2 = ((maxVal - globalMin) / totalRange) * 100;
 
-            // Gradient: Gray | Black | Gray
             sliderTrack.style.background = `linear-gradient(to right, #eee ${percent1}%, #000 ${percent1}%, #000 ${percent2}%, #eee ${percent2}%)`;
         }
 
@@ -1488,14 +1579,11 @@
         function filterPreview() {
             if(typeof productData === 'undefined') return;
 
-            // Get current criteria
             const currentMin = parseFloat(hiddenMin.value);
             const currentMax = parseFloat(hiddenMax.value);
 
-            // Get checked brands
             const checkedBrands = Array.from(document.querySelectorAll('.brand-checkbox:checked')).map(cb => cb.value);
 
-            // Filter logic
             const filtered = productData.filter(p => {
                 const matchesPrice = (p.price >= currentMin && p.price <= currentMax);
                 const matchesBrand = (checkedBrands.length === 0) || checkedBrands.includes(p.brand);
@@ -1507,7 +1595,6 @@
             const priceHint = document.getElementById('priceHint');
             const brandHint = document.getElementById('brandHint');
 
-            // Update UI
             if (count > 0) {
                 btn.innerText = `View ${count} Products`;
                 btn.disabled = false;
@@ -1517,22 +1604,18 @@
                 btn.innerText = `No Products Found`;
                 btn.disabled = true;
 
-                // Determine hint type
-                // Check if price alone yields 0
                 const priceOnlyCount = productData.filter(p => p.price >= currentMin && p.price <= currentMax).length;
 
                 if (priceOnlyCount === 0) {
                     priceHint.style.display = 'block';
                     brandHint.style.display = 'none';
                 } else {
-                    // Price is okay, so Brand must be the issue
                     priceHint.style.display = 'none';
                     brandHint.style.display = 'block';
                 }
             }
         }
 
-        // Initial setup
         document.addEventListener('DOMContentLoaded', () => {
             if(rangeMin && rangeMax) {
                 rangeMin.addEventListener('mouseover', function(){ rangeMin.style.zIndex = "2"; rangeMax.style.zIndex = "1"; });
@@ -1565,7 +1648,7 @@
             localStorage.setItem('userFontSize', size);
         }
 
-        /* ================= ✨✨✨ VOICE SEARCH LOGIC (With Visual Feedback & Language Mapping) ✨✨✨ ================= */
+        /* ================= VOICE SEARCH LOGIC ================= */
         function startVoiceRecognition() {
             if (!('webkitSpeechRecognition' in window)) {
                 alert("Voice search is not supported in this browser. Please use Chrome, Edge, or Safari.");
@@ -1577,16 +1660,12 @@
             const statusSpan = document.getElementById('voiceStatus');
             const searchInput = document.getElementById('mainSearchInput');
 
-            // 2. ✨ Intelligent Language Detection ✨
-            // We check the cookie 'googtrans' to see what language the user has selected.
             const cookieMatch = document.cookie.match(/googtrans=\/en\/([a-zA-Z-]+)/);
-            let targetLang = 'en-US'; // Default to English
+            let targetLang = 'en-US'; 
             let displayLangName = 'English';
 
             if (cookieMatch && cookieMatch[1]) {
                 const code = cookieMatch[1];
-
-                // === MACAU SPECIAL: Map "Traditional Chinese" (zh-TW) to "Cantonese" (yue-Hant-HK) ===
                 if (code === 'zh-TW') {
                     targetLang = 'yue-Hant-HK';
                     displayLangName = 'Cantonese';
@@ -1604,11 +1683,10 @@
 
             recognition.start();
 
-            // ✨ UI Updates for States ✨
             recognition.onstart = function() {
                 micBtn.classList.add('listening');
                 statusSpan.innerHTML = `<i class="bi bi-record-circle-fill me-2"></i> Listening (${displayLangName})...`;
-                statusSpan.className = "status-listening active"; // Red style
+                statusSpan.className = "status-listening active"; 
                 searchInput.placeholder = "Listening...";
             };
 
@@ -1619,12 +1697,9 @@
 
             recognition.onend = function() {
                 micBtn.classList.remove('listening');
-
-                // Show "Stopped" message briefly
                 statusSpan.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Recording Stopped`;
-                statusSpan.className = "status-done active"; // Green style
+                statusSpan.className = "status-done active"; 
 
-                // Fade out after 2 seconds
                 setTimeout(() => {
                     statusSpan.classList.remove('active');
                     searchInput.placeholder = "SEARCH...";
@@ -1634,13 +1709,12 @@
             recognition.onerror = function(event) {
                 console.error("Speech error", event.error);
                 micBtn.classList.remove('listening');
-
                 statusSpan.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2"></i> Error: Try Again`;
-                statusSpan.className = "status-error active"; // Orange style
+                statusSpan.className = "status-error active"; 
             };
         }
 
-        // === ✨✨✨ NEW: Page Jump Logic for Home Page ✨✨✨ ===
+        // === Page Jump Logic ===
         function jumpToPage() {
             const pageNum = document.getElementById('jumpPageInput').value;
             if (pageNum) {

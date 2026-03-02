@@ -728,7 +728,7 @@ def product_detail(request, product_id):
                 has_error_modal = True
 
     # ===== Reviews display data =====
-    reviews_qs = Review.objects.filter(product=product).order_by('-created_at')
+    reviews_qs = Review.objects.filter(product=product).order_by('-like_count', '-created_at')
     total_reviews = reviews_qs.count()
     avg_rating_data = reviews_qs.aggregate(Avg('rating'))
     avg_rating = round(avg_rating_data['rating__avg'] or 0, 1)

@@ -107,7 +107,7 @@ LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"
 
-USE_I18N = True
+USE_I18N = False
 
 USE_TZ = True
 
@@ -153,4 +153,3 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 # 3. 确保关闭浏览器也清理 (双重保险)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-

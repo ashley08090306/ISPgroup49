@@ -249,6 +249,49 @@
         .review-media-grid { display: flex; gap: 8px; margin-top: 12px; margin-bottom: 15px; }
         .review-media-item { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
 
+        /* ✨ NEW: Video Thumbnail specific to Product Detail (50x50 size) ✨ */
+        .video-thumbnail-container {
+            position: relative;
+            width: 50px; 
+            height: 50px;
+            cursor: pointer;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+            background-color: #000;
+            flex-shrink: 0;
+        }
+        .video-thumbnail-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+        .play-icon-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            pointer-events: none;
+            text-shadow: 0px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Custom Modal for Video Playing */
+        #videoPlayerModal .modal-content {
+            background-color: transparent;
+            border: none;
+        }
+        #videoPlayerModal .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        #videoPlayerModal .btn-close-white:hover {
+            opacity: 1;
+        }
+
         .appended-review-box { margin-top: 15px; padding-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); }
         .appended-review-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #1d1d1f; margin-bottom: 5px; }
         .appended-review-date { font-weight: normal; color: #86868b; text-transform: none; margin-left: 5px; }
@@ -570,7 +613,12 @@
                                 {% if media.media_type == 'image' %}
                                     <img src="{{ media.file.url }}" class="review-media-item" onclick="window.open(this.src)">
                                 {% elif media.media_type == 'video' %}
-                                    <div class="review-media-item d-flex align-items-center justify-content-center bg-black text-white" style="font-size:10px;">VIDEO</div>
+                                    <div class="video-thumbnail-container" onclick="openVideoModal('{{ media.file.url }}')">
+                                        <video class="video-preview" muted loop playsinline preload="metadata">
+                                            <source src="{{ media.file.url }}#t=0.1" type="video/mp4">
+                                        </video>
+                                        <div class="play-icon-overlay"><i class="bi bi-play-circle"></i></div>
+                                    </div>
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -730,6 +778,21 @@
             </div>
         </div>
     </footer>
+
+    <div class="modal fade" id="videoPlayerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0 pt-2 pe-2 justify-content-end">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <video id="fullScreenVideoPlayer" controls style="max-width: 100%; max-height: 80vh; border-radius: 8px; background-color: #000;">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1027,6 +1090,53 @@
                 statusSpan.innerHTML = `<i class="bi bi-exclamation-circle-fill me-2"></i> Error: Try Again`;
                 statusSpan.className = "status-error active";
             };
+        }
+
+        // === ✨ Video Preview Hover & Modal Logic ✨ ===
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoContainers = document.querySelectorAll('.video-thumbnail-container');
+            
+            videoContainers.forEach(container => {
+                const video = container.querySelector('.video-preview');
+                
+                // Play on hover
+                container.addEventListener('mouseenter', () => {
+                    if (video) {
+                        video.play().catch(e => console.log("Autoplay prevented:", e));
+                    }
+                });
+
+                // Pause on leave
+                container.addEventListener('mouseleave', () => {
+                    if (video) {
+                        video.pause();
+                    }
+                });
+            });
+        });
+
+        // Open Modal Logic
+        let videoPlayerModalInstance = null;
+        window.openVideoModal = function(videoUrl) {
+            if (!videoPlayerModalInstance) {
+                videoPlayerModalInstance = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
+            }
+            const modalVideo = document.getElementById('fullScreenVideoPlayer');
+            modalVideo.src = videoUrl;
+            videoPlayerModalInstance.show();
+            
+            // Auto play
+            modalVideo.play().catch(e => console.log("Modal video autoplay prevented:", e));
+        };
+
+        // Stop Sound When Modal Closes
+        const videoModalEl = document.getElementById('videoPlayerModal');
+        if (videoModalEl) {
+            videoModalEl.addEventListener('hidden.bs.modal', function () {
+                const modalVideo = document.getElementById('fullScreenVideoPlayer');
+                modalVideo.pause();   
+                modalVideo.src = '';  // Clear source to guarantee silence
+            });
         }
     </script>
 

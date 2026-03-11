@@ -84,9 +84,43 @@
         .review-stars { color: #d4af37; font-size: 0.9rem; margin-bottom: 15px; }
         .review-comment { font-size: 1rem; line-height: 1.6; color: #333; }
 
-        /* Media */
-        .review-media-grid { display: flex; gap: 10px; margin-top: 15px; }
-        .review-media-item { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #eee; }
+        /* ✨ Media Grid & Video Thumbnails ✨ */
+        .review-media-grid { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .review-media-item { 
+            width: 80px; 
+            height: 80px; 
+            object-fit: cover; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            border: 1px solid #eee; 
+        }
+        
+        .video-thumbnail-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #eee;
+            background-color: #000;
+        }
+        .video-thumbnail-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none; /* Let hover events pass to container */
+        }
+        .play-icon-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.8rem;
+            pointer-events: none;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+        }
 
         /* Vendor Reply Box */
         .vendor-reply-box {
@@ -112,7 +146,7 @@
             font-style: italic;
         }
 
-        /* ✨ NEW: Review Like Action Row ✨ */
+        /* Review Like Action Row */
         .review-action-row {
             display: flex;
             align-items: center;
@@ -135,8 +169,21 @@
             font-weight: 500;
         }
         .btn-like:hover { color: #1d1d1f; }
-        /* When liked, the heart turns black */
         .btn-like i.text-dark { color: #1d1d1f !important; }
+
+        /* Custom Modal for Video Playing */
+        #videoPlayerModal .modal-content {
+            background-color: transparent;
+            border: none;
+        }
+        #videoPlayerModal .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        #videoPlayerModal .btn-close-white:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -193,6 +240,13 @@
                     {% for media in review.media.all %}
                         {% if media.media_type == 'image' %}
                             <img src="{{ media.file.url }}" class="review-media-item" onclick="window.open(this.src)">
+                        {% elif media.media_type == 'video' %}
+                            <div class="video-thumbnail-container" onclick="openVideoModal('{{ media.file.url }}')">
+                                <video class="video-preview" muted loop playsinline preload="metadata">
+                                    <source src="{{ media.file.url }}#t=0.1" type="video/mp4">
+                                </video>
+                                <div class="play-icon-overlay"><i class="bi bi-play-circle"></i></div>
+                            </div>
                         {% endif %}
                     {% endfor %}
                 </div>
@@ -237,6 +291,21 @@
         </div>
     </div>
 
+    <div class="modal fade" id="videoPlayerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0 pt-2 pe-2 justify-content-end">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <video id="fullScreenVideoPlayer" controls style="max-width: 100%; max-height: 80vh; border-radius: 8px; background-color: #000;">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1055;">
         <div id="rateLimitToast" class="toast align-items-center text-white bg-black border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
@@ -253,15 +322,14 @@
     <script>
         const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
 
+        // Like Toggle Logic
         function toggleLike(reviewId, btnElement) {
             if (!isAuthenticated) {
-                // Not logged in -> Show elegant modal
                 const loginModal = new bootstrap.Modal(document.getElementById('likeLoginModal'));
                 loginModal.show();
                 return;
             }
 
-            // Temporarily disable the button to prevent double-clicks
             btnElement.disabled = true;
 
             fetch(`/api/reviews/${reviewId}/like/`, {
@@ -272,13 +340,10 @@
                 }
             })
             .then(res => {
-                // Handle rate limiting (429 Too Many Requests)
                 if (res.status === 429) {
-                    // ✨ 核心修改：触发 Toast 提示 ✨
                     const toastEl = document.getElementById('rateLimitToast');
-                    const toast = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3秒后自动淡出消失
+                    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
                     toast.show();
-
                     btnElement.disabled = false;
                     return Promise.reject('Rate limited');
                 }
@@ -305,6 +370,52 @@
                 btnElement.disabled = false;
             });
         }
+
+        // ✨ Video Hover Play/Pause Logic ✨
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoContainers = document.querySelectorAll('.video-thumbnail-container');
+            
+            videoContainers.forEach(container => {
+                const video = container.querySelector('.video-preview');
+                
+                // Play on mouse enter
+                container.addEventListener('mouseenter', () => {
+                    if (video) {
+                        video.play().catch(e => console.log("Autoplay prevented:", e));
+                    }
+                });
+
+                // Pause on mouse leave
+                container.addEventListener('mouseleave', () => {
+                    if (video) {
+                        video.pause();
+                    }
+                });
+            });
+        });
+
+        // ✨ Video Modal Open Logic ✨
+        let videoPlayerModalInstance = null;
+        function openVideoModal(videoUrl) {
+            if (!videoPlayerModalInstance) {
+                videoPlayerModalInstance = new bootstrap.Modal(document.getElementById('videoPlayerModal'));
+            }
+            const modalVideo = document.getElementById('fullScreenVideoPlayer');
+            modalVideo.src = videoUrl;
+            videoPlayerModalInstance.show();
+            
+            // Auto play the video once the modal is shown
+            modalVideo.play().catch(e => console.log("Modal video autoplay prevented:", e));
+        }
+
+        // ✨ Video Modal Close & Stop Sound Logic ✨
+        const videoModalEl = document.getElementById('videoPlayerModal');
+        videoModalEl.addEventListener('hidden.bs.modal', function () {
+            const modalVideo = document.getElementById('fullScreenVideoPlayer');
+            modalVideo.pause();   // Pause the video
+            modalVideo.src = '';  // Clear the source entirely to cut off any remaining sound buffer
+        });
+
     </script>
     {% include 'heartbeat.html' %}
 </body>
